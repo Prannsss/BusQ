@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -5,10 +6,11 @@ import { TripList } from "@/components/trips/trip-list";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { Separator } from "@/components/ui/separator";
 import { Bus } from "lucide-react";
-import type { FilterableBusType } from "@/types";
+import type { FilterableBusType, FilterableTripDirection } from "@/types";
 
 export default function TripsPage() {
-  const [activeFilter, setActiveFilter] = useState<FilterableBusType>("all");
+  const [activeBusTypeFilter, setActiveBusTypeFilter] = useState<FilterableBusType>("all");
+  const [activeDirectionFilter, setActiveDirectionFilter] = useState<FilterableTripDirection>("all");
 
   return (
     <div className="space-y-8">
@@ -18,16 +20,18 @@ export default function TripsPage() {
         </div>
         <h1 className="text-4xl font-bold text-primary-foreground">Available Trips</h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Find and book your bus from Mantalongon to Cebu City.
+          Find and book your bus from Mantalongon to Cebu City or vice versa.
         </p>
       </header>
       
       <TripFilters 
-        activeFilter={activeFilter} 
-        onFilterChange={setActiveFilter} 
+        activeBusTypeFilter={activeBusTypeFilter} 
+        onBusTypeFilterChange={setActiveBusTypeFilter}
+        activeDirectionFilter={activeDirectionFilter}
+        onDirectionFilterChange={setActiveDirectionFilter} 
       />
       <Separator className="my-6 bg-border" />
-      <TripList activeFilter={activeFilter} />
+      <TripList activeBusTypeFilter={activeBusTypeFilter} activeDirectionFilter={activeDirectionFilter} />
     </div>
   );
 }

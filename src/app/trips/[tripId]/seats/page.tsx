@@ -1,21 +1,71 @@
+
 import { SeatMap } from "@/components/seats/seat-map";
-import { Trip, BusType } from "@/types";
+import { Trip, BusType, TripStatus } from "@/types"; // Added TripStatus
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Armchair, Ticket, Calendar, Clock, Info } from "lucide-react";
+import { Armchair, Ticket, Calendar, Clock, Info, Route, Tag } from "lucide-react"; // Added Route, Tag
 import Link from "next/link";
+import { format, addMinutes, parse } from 'date-fns'; // For date manipulations
 
-// Mock function to get trip details by ID
-async function getTripDetails(tripId: string): Promise<Trip | null> {
-  // In a real app, fetch this from your data source
-  const mockTrips: Trip[] = [
-    { id: "1", departureTime: "08:00 AM", arrivalTime: "11:00 AM", busType: "Airconditioned", availableSeats: 50, totalSeats: 65, price: 250, origin: "Mantalongon", destination: "Cebu City" },
-    { id: "2", departureTime: "09:30 AM", arrivalTime: "01:00 PM", busType: "Traditional", availableSeats: 40, totalSeats: 53, price: 180, origin: "Mantalongon", destination: "Cebu City" },
-    { id: "3", departureTime: "11:00 AM", arrivalTime: "02:30 PM", busType: "Airconditioned", availableSeats: 10, totalSeats: 65, price: 260, origin: "Mantalongon", destination: "Cebu City" },
-    { id: "4", departureTime: "01:00 PM", arrivalTime: "04:30 PM", busType: "Traditional", availableSeats: 53, totalSeats: 53, price: 180, origin: "Mantalongon", destination: "Cebu City" },
+// Mock data source - In a real app, this would be fetched
+// Duplicating trip generation logic for simplicity in this standalone page.
+// Ideally, this would come from a shared service or context.
+const FIXED_SCHEDULE_A_TO_B_SEATS: Array<{ time: string; busType: BusType }> = [
+    { time: "02:45", busType: "Traditional" }, { time: "03:20", busType: "Traditional" },
+    { time: "04:00", busType: "Traditional" }, { time: "05:30", busType: "Traditional" },
+    { time: "08:00", busType: "Airconditioned" }, { time: "11:30", busType: "Traditional" },
+    { time: "12:00", busType: "Traditional" }, { time: "13:00", busType: "Traditional" },
   ];
-  return mockTrips.find(trip => trip.id === tripId) || null;
+  
+const FIXED_SCHEDULE_B_TO_A_SEATS: Array<{ time: string; busType: BusType }> = [
+    { time: "07:00", busType: "Traditional" }, { time: "08:00", busType: "Traditional" },
+    { time: "09:00", busType: "Traditional" }, { time: "12:00", busType: "Traditional" },
+    { time: "13:00", busType: "Airconditioned" }, { time: "17:00", busType: "Traditional" },
+    { time: "18:00", busType: "Traditional" },
+];
+
+const TRAVEL_DURATION_MINS_SEATS = 240;
+const STOPOVER_DURATION_MINS_SEATS = 60;
+
+const generateMockTripsForSeatsPage = (): Trip[] => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const allTrips: Trip[] = [];
+    let tripIdCounter = 1;
+  
+    const createTrips = (
+      schedule: Array<{ time: string; busType: BusType }>,
+      direction: Trip["direction"],
+      origin: string,
+      destination: string
+    ) => {
+      schedule.forEach(item => {
+        const [hours, minutes] = item.time.split(':').map(Number);
+        const departureDateTime = new Date(todayStr);
+        departureDateTime.setHours(hours, minutes, 0, 0);
+        const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
+  
+        allTrips.push({
+          id: `trip-${tripIdCounter++}`, busId: `bus-${tripIdCounter % 5}`, direction, origin, destination,
+          departureTime: item.time, arrivalTime: format(arrivalDateTime, "HH:mm"),
+          travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
+          busType: item.busType, availableSeats: Math.floor(Math.random() * (item.busType === "Airconditioned" ? 65 : 53)),
+          totalSeats: item.busType === "Airconditioned" ? 65 : 53,
+          price: item.busType === "Airconditioned" ? 260 : 180, tripDate: todayStr, status: "Scheduled" as TripStatus,
+        });
+      });
+    };
+    createTrips(FIXED_SCHEDULE_A_TO_B_SEATS, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City");
+    createTrips(FIXED_SCHEDULE_B_TO_A_SEATS, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon");
+    allTrips.sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+    return allTrips;
+  };
+  
+const ALL_MOCK_TRIPS_SEATS = generateMockTripsForSeatsPage();
+
+
+async function getTripDetails(tripId: string): Promise<Trip | null> {
+  return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripId) || null;
 }
 
 export default async function SeatSelectionPage({ params }: { params: { tripId: string } }) {
@@ -37,6 +87,8 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
   // This is a placeholder. In a real app, selectedSeatsCount would come from SeatMap state.
   const selectedSeatsCount = 0; // Example: 0 seats selected initially
   const totalPrice = trip.price * selectedSeatsCount;
+  const isBookable = trip.status === "Scheduled" || trip.status === "On Standby";
+
 
   return (
     <div className="container mx-auto py-8">
@@ -46,6 +98,9 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
         <p className="mt-2 text-lg text-muted-foreground">
           Choose your preferred seats for the trip from {trip.origin} to {trip.destination}.
         </p>
+         {!isBookable && (
+            <p className="mt-2 text-yellow-500 font-semibold">This trip is currently {trip.status.toLowerCase()} and not available for booking.</p>
+        )}
       </header>
 
       <div className="grid md:grid-cols-3 gap-8">
@@ -56,7 +111,6 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
               <CardDescription>Click on available seats to select them. Total seats: {trip.totalSeats}</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Pass trip data to SeatMap if it needs price or other details for selections */}
               <SeatMap busType={trip.busType} />
             </CardContent>
           </Card>
@@ -69,26 +123,40 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Route className="h-4 w-4 mr-2" /> Route:</span>
+                <span className="font-semibold">{trip.origin} to {trip.destination}</span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><Calendar className="h-4 w-4 mr-2" /> Date:</span>
-                <span className="font-semibold">Today (Example)</span>
+                <span className="font-semibold">{trip.tripDate}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><Clock className="h-4 w-4 mr-2" /> Departure:</span>
                 <span className="font-semibold">{trip.departureTime}</span>
               </div>
+               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Clock className="h-4 w-4 mr-2" /> Arrival:</span>
+                <span className="font-semibold">{trip.arrivalTime}</span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Bus Type:</span>
                 <span className="font-semibold">{trip.busType}</span>
               </div>
+               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                <span className="font-semibold">{trip.status}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Price/Seat:</span>
+                <span className="font-semibold">PHP {trip.price.toFixed(2)}</span>
+              </div>
               <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><Armchair className="h-4 w-4 mr-2" /> Seats Selected:</span>
-                {/* This should be dynamically updated based on SeatMap's state */}
                 <span className="font-semibold" id="selected-seats-count">{selectedSeatsCount}</span> 
               </div>
               <div className="flex items-center justify-between text-lg">
                 <span className="text-muted-foreground">Total Price:</span>
-                {/* This should be dynamically updated */}
                 <span className="font-bold text-primary" id="total-price">PHP {totalPrice.toFixed(2)}</span>
               </div>
             </CardContent>
@@ -96,8 +164,9 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
           <Button 
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
             // onClick={() => { /* Implement actual reservation logic */ alert("Reservation logic not yet implemented.")}}
+            disabled={!isBookable}
           >
-            Confirm Reservation
+            {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
           </Button>
           <Link href="/trips" className="w-full">
             <Button variant="outline" className="w-full text-accent-foreground border-accent hover:bg-accent/20">
@@ -109,3 +178,4 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
     </div>
   );
 }
+

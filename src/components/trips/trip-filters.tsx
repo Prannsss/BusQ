@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -8,18 +9,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { FilterableBusType } from "@/types";
+import type { FilterableBusType, FilterableTripDirection, TripDirection } from "@/types";
 import { Card, CardContent } from "../ui/card";
-import { Filter } from "lucide-react";
+import { Filter, Route } from "lucide-react";
 
 interface TripFiltersProps {
-  activeFilter: FilterableBusType;
-  onFilterChange: (value: FilterableBusType) => void;
+  activeBusTypeFilter: FilterableBusType;
+  onBusTypeFilterChange: (value: FilterableBusType) => void;
+  activeDirectionFilter: FilterableTripDirection;
+  onDirectionFilterChange: (value: FilterableTripDirection) => void;
 }
 
-export function TripFilters({ activeFilter, onFilterChange }: TripFiltersProps) {
+export function TripFilters({ 
+    activeBusTypeFilter, 
+    onBusTypeFilterChange,
+    activeDirectionFilter,
+    onDirectionFilterChange 
+}: TripFiltersProps) {
+  
   const handleBusTypeChange = (value: string) => {
-    onFilterChange(value as FilterableBusType);
+    onBusTypeFilterChange(value as FilterableBusType);
+  };
+
+  const handleDirectionChange = (value: string) => {
+    onDirectionFilterChange(value as FilterableTripDirection);
   };
 
   return (
@@ -31,18 +44,33 @@ export function TripFilters({ activeFilter, onFilterChange }: TripFiltersProps) 
                 Filter Trips
             </div>
             <div className="flex-grow"></div> {/* Spacer */}
-            <div className="flex items-center gap-2">
-            <Label htmlFor="bus-type-select" className="text-muted-foreground">Bus Type:</Label>
-            <Select value={activeFilter} onValueChange={handleBusTypeChange}>
-                <SelectTrigger id="bus-type-select" className="w-full sm:w-[200px] bg-input border-border focus:ring-primary">
-                <SelectValue placeholder="Select bus type" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-popover">
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Traditional">Traditional</SelectItem>
-                <SelectItem value="Airconditioned">Airconditioned</SelectItem>
-                </SelectContent>
-            </Select>
+            
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Label htmlFor="direction-select" className="text-muted-foreground whitespace-nowrap">Direction:</Label>
+              <Select value={activeDirectionFilter} onValueChange={handleDirectionChange}>
+                  <SelectTrigger id="direction-select" className="w-full sm:w-[240px] bg-input border-border focus:ring-primary">
+                  <SelectValue placeholder="Select direction" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-popover">
+                  <SelectItem value="all">All Directions</SelectItem>
+                  <SelectItem value="Mantalongon_to_Cebu">Mantalongon to Cebu</SelectItem>
+                  <SelectItem value="Cebu_to_Mantalongon">Cebu to Mantalongon</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Label htmlFor="bus-type-select" className="text-muted-foreground whitespace-nowrap">Bus Type:</Label>
+              <Select value={activeBusTypeFilter} onValueChange={handleBusTypeChange}>
+                  <SelectTrigger id="bus-type-select" className="w-full sm:w-[200px] bg-input border-border focus:ring-primary">
+                  <SelectValue placeholder="Select bus type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-popover">
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Traditional">Traditional</SelectItem>
+                  <SelectItem value="Airconditioned">Airconditioned</SelectItem>
+                  </SelectContent>
+              </Select>
             </div>
         </div>
       </CardContent>

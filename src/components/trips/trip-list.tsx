@@ -1,71 +1,102 @@
-import type { Trip, FilterableBusType } from "@/types";
+
+import type { Trip, FilterableBusType, TripDirection, TripStatus, BusType, FilterableTripDirection } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
+import { format, addMinutes, parse } from 'date-fns';
 
-// Mock data for trips
-const mockTrips: Trip[] = [
-  {
-    id: "1",
-    departureTime: "08:00 AM",
-    arrivalTime: "11:00 AM",
-    busType: "Airconditioned",
-    availableSeats: 50, // Example, could be dynamic
-    totalSeats: 65,     // Updated: 5*12 main + 5 rear
-    price: 250,
-    origin: "Mantalongon",
-    destination: "Cebu City",
-    busPlateNumber: "XYZ 123"
-  },
-  {
-    id: "2",
-    departureTime: "09:30 AM",
-    arrivalTime: "01:00 PM",
-    busType: "Traditional",
-    availableSeats: 40, // Example
-    totalSeats: 53,     // Updated: 4*12 main + 5 rear
-    price: 180,
-    origin: "Mantalongon",
-    destination: "Cebu City",
-  },
-  {
-    id: "3",
-    departureTime: "11:00 AM",
-    arrivalTime: "02:30 PM",
-    busType: "Airconditioned",
-    availableSeats: 10, // Example
-    totalSeats: 65,     // Updated
-    price: 260,
-    origin: "Mantalongon",
-    destination: "Cebu City",
-    busPlateNumber: "ABC 789"
-  },
-  {
-    id: "4",
-    departureTime: "01:00 PM",
-    arrivalTime: "04:30 PM",
-    busType: "Traditional",
-    availableSeats: 53, // Example, full
-    totalSeats: 53,     // Updated
-    price: 180,
-    origin: "Mantalongon",
-    destination: "Cebu City",
-  },
+// Fixed Schedule Configuration
+const FIXED_SCHEDULE_A_TO_B: Array<{ time: string; busType: BusType }> = [
+  { time: "02:45", busType: "Traditional" },
+  { time: "03:20", busType: "Traditional" },
+  { time: "04:00", busType: "Traditional" },
+  { time: "05:30", busType: "Traditional" },
+  { time: "08:00", busType: "Airconditioned" },
+  { time: "11:30", busType: "Traditional" },
+  { time: "12:00", busType: "Traditional" },
+  { time: "13:00", busType: "Traditional" },
 ];
 
+const FIXED_SCHEDULE_B_TO_A: Array<{ time: string; busType: BusType }> = [
+  { time: "07:00", busType: "Traditional" },
+  { time: "08:00", busType: "Traditional" },
+  { time: "09:00", busType: "Traditional" },
+  { time: "12:00", busType: "Traditional" },
+  { time: "13:00", busType: "Airconditioned" },
+  { time: "17:00", busType: "Traditional" },
+  { time: "18:00", busType: "Traditional" },
+];
+
+const TRAVEL_DURATION_MINS = 240; // 4 hours
+const STOPOVER_DURATION_MINS = 60; // 1 hour
+
+// Function to generate trips for the current day
+const generateTodaysTrips = (): Trip[] => {
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const allTrips: Trip[] = [];
+  let tripIdCounter = 1;
+
+  const createTripsForSchedule = (
+    schedule: Array<{ time: string; busType: BusType }>,
+    direction: TripDirection,
+    origin: string,
+    destination: string
+  ) => {
+    schedule.forEach(item => {
+      const [hours, minutes] = item.time.split(':').map(Number);
+      const departureDateTime = new Date(todayStr);
+      departureDateTime.setHours(hours, minutes, 0, 0);
+      
+      const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
+
+      allTrips.push({
+        id: `trip-${tripIdCounter++}`,
+        busId: `bus-${Math.floor(Math.random() * 100) + 1}`,
+        direction,
+        origin,
+        destination,
+        departureTime: item.time, // Keep as "HH:mm"
+        arrivalTime: format(arrivalDateTime, "HH:mm"),
+        travelDurationMins: TRAVEL_DURATION_MINS,
+        stopoverDurationMins: STOPOVER_DURATION_MINS,
+        busType: item.busType,
+        availableSeats: item.busType === "Airconditioned" ? Math.floor(Math.random() * 65) : Math.floor(Math.random() * 53),
+        totalSeats: item.busType === "Airconditioned" ? 65 : 53,
+        price: item.busType === "Airconditioned" ? (Math.random() * 50 + 250) : (Math.random() * 50 + 180), // Price range
+        tripDate: todayStr,
+        status: "Scheduled" as TripStatus, // Initial status
+        busPlateNumber: `XYZ ${tripIdCounter % 100}${tripIdCounter % 10}`
+      });
+    });
+  };
+
+  createTripsForSchedule(FIXED_SCHEDULE_A_TO_B, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City");
+  createTripsForSchedule(FIXED_SCHEDULE_B_TO_A, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon");
+  
+  // Sort trips by departure time
+  allTrips.sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+  
+  return allTrips;
+};
+
+const mockTrips: Trip[] = generateTodaysTrips();
+
 interface TripListProps {
-  activeFilter: FilterableBusType;
+  activeBusTypeFilter: FilterableBusType;
+  activeDirectionFilter: FilterableTripDirection;
 }
 
-export function TripList({ activeFilter }: TripListProps) {
-  const filteredTrips = mockTrips.filter(trip => 
-    activeFilter === "all" || trip.busType === activeFilter
-  );
+export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
+  const filteredTrips = mockTrips.filter(trip => {
+    const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
+    const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
+    return busTypeMatch && directionMatch;
+  });
 
   if (filteredTrips.length === 0) {
     return (
       <div className="text-center py-10 text-muted-foreground">
         <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-        <p className="text-xl">No trips available for the selected filter.</p>
+        <p className="text-xl">No trips available for the selected filters.</p>
         <p>Please check back later or adjust your filters.</p>
       </div>
     );

@@ -1,16 +1,28 @@
+
 export type BusType = "Traditional" | "Airconditioned";
 export type FilterableBusType = BusType | "all";
 
+export type TripDirection = "Mantalongon_to_Cebu" | "Cebu_to_Mantalongon";
+export type FilterableTripDirection = TripDirection | "all";
+
+export type TripStatus = "Scheduled" | "On Standby" | "Travelling" | "Completed" | "Cancelled" | "Parked";
+
 export interface Trip {
   id: string;
-  departureTime: string;
-  arrivalTime: string;
+  busId?: string; // Optional, can be linked to a specific bus entity
+  direction: TripDirection;
+  origin: string;
+  destination: string;
+  departureTime: string; // 24-hour format "HH:mm"
+  arrivalTime: string; // Calculated, 24-hour format "HH:mm"
+  travelDurationMins: number;
+  stopoverDurationMins: number; // Duration at destination before potential return trip or next assignment
   busType: BusType;
   availableSeats: number;
   totalSeats: number;
   price: number;
-  origin: string;
-  destination: string;
+  tripDate: string; // "YYYY-MM-DD"
+  status: TripStatus;
   busPlateNumber?: string; // Optional for tracking
 }
 
@@ -34,7 +46,7 @@ export interface Reservation {
   tripId: string;
   seatNumbers: string[];
   busType: BusType;
-  departureTime: string;
+  departureTime: string; // Should match Trip's departureTime
   totalAmount: number;
 }
 
