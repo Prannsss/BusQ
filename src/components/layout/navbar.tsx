@@ -13,6 +13,7 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
+  SheetTitle, // Added SheetTitle
 } from "@/components/ui/sheet";
 // import { Separator } from "@/components/ui/separator";
 
@@ -70,6 +71,7 @@ export function Navbar() {
                   variant={link.label === "Sign Up" ? "default" : "outline"}
                   className={cn(
                     "text-sm px-3 py-1.5 md:px-4 md:py-2",
+                     link.label === "Sign Up" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "text-accent-foreground border-accent hover:bg-accent/20",
                     pathname === link.href && "ring-2 ring-primary"
                   )}
                 >
@@ -90,6 +92,7 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] bg-card p-0 pt-6 flex flex-col">
+                <SheetTitle><span className="sr-only">Main menu</span></SheetTitle> 
                 <div className="px-4 mb-6">
                    <Link href="/" passHref onClick={closeMobileMenu}>
                     <div className="flex items-center space-x-2 cursor-pointer">
