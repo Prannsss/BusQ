@@ -1,16 +1,14 @@
 
 import { SeatMap } from "@/components/seats/seat-map";
-import { Trip, BusType, TripStatus } from "@/types"; // Added TripStatus
+import { Trip, BusType, TripStatus, TripDirection, cebuDestinationsList } from "@/types"; 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Armchair, Ticket, Calendar, Clock, Info, Route, Tag } from "lucide-react"; // Added Route, Tag
+import { Armchair, Ticket, Calendar, Clock, Info, Route, Tag } from "lucide-react"; 
 import Link from "next/link";
-import { format, addMinutes, parse } from 'date-fns'; // For date manipulations
+import { format, addMinutes } from 'date-fns'; 
 
-// Mock data source - In a real app, this would be fetched
-// Duplicating trip generation logic for simplicity in this standalone page.
-// Ideally, this would come from a shared service or context.
+// Fixed Schedule Configuration (copied for consistency, ideally from a shared source)
 const FIXED_SCHEDULE_A_TO_B_SEATS: Array<{ time: string; busType: BusType }> = [
     { time: "02:45", busType: "Traditional" }, { time: "03:20", busType: "Traditional" },
     { time: "04:00", busType: "Traditional" }, { time: "05:30", busType: "Traditional" },
@@ -31,45 +29,62 @@ const STOPOVER_DURATION_MINS_SEATS = 60;
 const generateMockTripsForSeatsPage = (): Trip[] => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const allTrips: Trip[] = [];
-    let tripIdCounter = 1; // Independent counter for this instance
+    let tripIdCounter = 1;
   
-    const createTrips = (
-      schedule: Array<{ time: string; busType: BusType }>,
-      direction: Trip["direction"],
+    const createTripForSeatsPage = (
+      departureTimeStr: string,
+      busType: BusType,
+      direction: TripDirection,
       origin: string,
-      destination: string
-    ) => {
-      schedule.forEach(item => {
-        const [hours, minutes] = item.time.split(':').map(Number);
-        const departureDateTime = new Date(todayStr);
-        departureDateTime.setHours(hours, minutes, 0, 0);
-        const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
-        const totalSeatsForType = item.busType === "Airconditioned" ? 65 : 53;
-        // Deterministic available seats to prevent hydration errors
-        const availableSeatsForType = item.busType === "Airconditioned" 
-          ? Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 7 % 60) + 5)) 
-          : Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 5 % 50) + 3));
-        
-        // Deterministic price to prevent hydration errors
-        const basePrice = item.busType === "Airconditioned" ? 250 : 180;
-        const priceVariation = (tripIdCounter * 5 % 40) + 10; // Variation between 10 and 50 for this specific mock generation
-        const finalPrice = basePrice + priceVariation;
+      destination: string,
+      currentTripId: number
+    ): Trip => {
+      const [hours, minutes] = departureTimeStr.split(':').map(Number);
+      const departureDateTime = new Date(todayStr);
+      departureDateTime.setHours(hours, minutes, 0, 0);
+      
+      const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
+      const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
+      
+      const availableSeatsForType = busType === "Airconditioned" 
+        ? Math.max(0, Math.min(totalSeatsForType, (currentTripId * 7 % 60) + 5)) 
+        : Math.max(0, Math.min(totalSeatsForType, (currentTripId * 5 % 50) + 3));
+      
+      const basePrice = busType === "Airconditioned" ? 250 : 180;
+      const priceVariation = (currentTripId * 13 % 41);
+      const finalPrice = basePrice + priceVariation;
   
-        allTrips.push({
-          id: `trip-${tripIdCounter++}`, busId: `bus-${tripIdCounter % 5}`, direction, origin, destination,
-          departureTime: item.time, arrivalTime: format(arrivalDateTime, "HH:mm"),
-          travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
-          busType: item.busType, 
-          availableSeats: availableSeatsForType,
-          totalSeats: totalSeatsForType,
-          price: finalPrice, 
-          tripDate: todayStr, status: "Scheduled" as TripStatus,
-        });
-      });
+      return {
+        id: `trip-${currentTripId}`, busId: `bus-${currentTripId % 5}`, direction, origin, destination,
+        departureTime: departureTimeStr, arrivalTime: format(arrivalDateTime, "HH:mm"),
+        travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
+        busType: busType, 
+        availableSeats: availableSeatsForType,
+        totalSeats: totalSeatsForType,
+        price: finalPrice, 
+        tripDate: todayStr, status: "Scheduled" as TripStatus,
+      };
     };
-    createTrips(FIXED_SCHEDULE_A_TO_B_SEATS, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City");
-    createTrips(FIXED_SCHEDULE_B_TO_A_SEATS, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon");
-    allTrips.sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+
+    // Generate trips from Mantalongon to Cebu City
+    FIXED_SCHEDULE_A_TO_B_SEATS.forEach(item => {
+        allTrips.push(createTripForSeatsPage(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
+    });
+
+    // Generate trips from Cebu City to various destinations
+    FIXED_SCHEDULE_B_TO_A_SEATS.forEach(item => {
+        cebuDestinationsList.forEach(destinationTown => {
+            allTrips.push(createTripForSeatsPage(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", destinationTown, tripIdCounter++));
+        });
+    });
+    
+    allTrips.sort((a, b) => {
+        const timeComp = a.departureTime.localeCompare(b.departureTime);
+        if (timeComp !== 0) return timeComp;
+        const originComp = a.origin.localeCompare(b.origin);
+        if (originComp !== 0) return originComp;
+        return a.destination.localeCompare(b.destination);
+    });
     return allTrips;
   };
   
@@ -96,8 +111,7 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
     );
   }
   
-  // This is a placeholder. In a real app, selectedSeatsCount would come from SeatMap state.
-  const selectedSeatsCount = 0; // Example: 0 seats selected initially
+  const selectedSeatsCount = 0; 
   const totalPrice = trip.price * selectedSeatsCount;
   const isBookable = trip.status === "Scheduled" || trip.status === "On Standby";
 
@@ -175,7 +189,6 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
           </Card>
           <Button 
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
-            // onClick={() => { /* Implement actual reservation logic */ alert("Reservation logic not yet implemented.")}}
             disabled={!isBookable}
           >
             {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
@@ -190,4 +203,3 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
     </div>
   );
 }
-

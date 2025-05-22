@@ -6,11 +6,12 @@ import { TripList } from "@/components/trips/trip-list";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { Separator } from "@/components/ui/separator";
 import { Bus } from "lucide-react";
-import type { FilterableBusType, FilterableTripDirection } from "@/types";
+import type { FilterableBusType, FilterableTripDirection, CebuDestination } from "@/types";
 
 export default function TripsPage() {
   const [activeBusTypeFilter, setActiveBusTypeFilter] = useState<FilterableBusType>("all");
   const [activeDirectionFilter, setActiveDirectionFilter] = useState<FilterableTripDirection>("all");
+  const [selectedCebuDestination, setSelectedCebuDestination] = useState<CebuDestination>("all");
 
   return (
     <div className="space-y-8">
@@ -29,9 +30,15 @@ export default function TripsPage() {
         onBusTypeFilterChange={setActiveBusTypeFilter}
         activeDirectionFilter={activeDirectionFilter}
         onDirectionFilterChange={setActiveDirectionFilter} 
+        selectedCebuDestination={selectedCebuDestination}
+        onCebuDestinationChange={setSelectedCebuDestination}
       />
       <Separator className="my-6 bg-border" />
-      <TripList activeBusTypeFilter={activeBusTypeFilter} activeDirectionFilter={activeDirectionFilter} />
+      <TripList 
+        activeBusTypeFilter={activeBusTypeFilter} 
+        activeDirectionFilter={activeDirectionFilter}
+        selectedCebuDestination={selectedCebuDestination} 
+      />
     </div>
   );
 }
