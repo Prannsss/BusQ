@@ -68,18 +68,20 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description, link, linkText }: FeatureCardProps) {
   return (
-    <Card className="bg-card border-border shadow-xl hover:shadow-primary/30 transition-shadow duration-300">
+    <Card className="bg-card border-border shadow-xl hover:shadow-primary/30 transition-shadow duration-300 flex flex-col">
       <CardHeader className="items-center">
         {icon}
         <CardTitle className="mt-4 text-2xl">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="text-center">
+      <CardContent className="text-center flex flex-col flex-grow justify-between p-6">
         <CardDescription>{description}</CardDescription>
-        <Link href={link} passHref>
-          <Button variant="ghost" className="mt-6 text-primary hover:bg-primary/10 hover:text-primary">
-            {linkText} <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </Link>
+        <div> {/* Wrapper for the button part */}
+          <Link href={link} passHref>
+            <Button variant="ghost" className="mt-6 text-primary hover:bg-primary/10 hover:text-primary">
+              {linkText} <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );
