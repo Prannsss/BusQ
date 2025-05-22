@@ -9,7 +9,7 @@ export default function SignupPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">Create an Account</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Join Highlander Tracker to start your journey.
+            Join BusQ to start your journey.
           </CardDescription>
         </CardHeader>
         <CardContent>

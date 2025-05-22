@@ -70,7 +70,7 @@ export function BusMap({ busId }: BusMapProps) {
       <Map
         defaultCenter={INITIAL_BUS_POSITION}
         defaultZoom={10}
-        mapId="highlander-tracker-map"
+        mapId="busq-map"
         className="w-full h-full"
         gestureHandling={'greedy'}
         disableDefaultUI={true}

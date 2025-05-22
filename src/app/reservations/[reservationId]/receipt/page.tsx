@@ -41,7 +41,7 @@ export default async function ReservationReceiptPage({ params }: { params: { res
       <header className="text-center mb-8">
         <Printer className="mx-auto h-12 w-12 text-primary mb-4" />
         <h1 className="text-4xl font-bold text-primary-foreground">Reservation Receipt</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Thank you for booking with Highlander Tracker!</p>
+        <p className="mt-2 text-lg text-muted-foreground">Thank you for booking with BusQ!</p>
       </header>
       
       <ReceiptDetails reservation={reservation} />

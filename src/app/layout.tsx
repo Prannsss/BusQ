@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Highlander Tracker',
+  title: 'BusQ',
   description: 'Track your bus, book your seat.',
 };
 

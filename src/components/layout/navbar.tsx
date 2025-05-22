@@ -28,7 +28,7 @@ export function Navbar() {
           <Link href="/" passHref>
             <div className="flex items-center space-x-2 cursor-pointer">
               <Ticket className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-primary-foreground">Highlander<span className="text-primary">Tracker</span></span>
+              <span className="text-2xl font-bold text-primary-foreground">Bus<span className="text-primary">Q</span></span>
             </div>
           </Link>
 

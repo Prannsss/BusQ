@@ -8,7 +8,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center text-center">
       <header className="my-12">
-        <h1 className="text-5xl font-bold text-primary">Highlander Tracker</h1>
+        <h1 className="text-5xl font-bold text-primary">BusQ</h1>
         <p className="mt-4 text-xl text-muted-foreground">
           Your Journey, Simplified. Book seats, track buses, and travel smart.
         </p>
