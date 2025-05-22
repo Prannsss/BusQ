@@ -24,7 +24,8 @@ export interface Seat {
 }
 
 export interface SeatLayout {
-  rows: (Seat | null)[][]; // Array of rows, each row is an array of seats or null (aisle)
+  mainSeatRows: (Seat | null)[][]; // Array of main seating rows
+  rearBenchRow: (Seat | null)[];   // Array of seats for the rear bench, null for spacers if any
 }
 
 export interface Reservation {

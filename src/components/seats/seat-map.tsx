@@ -11,37 +11,76 @@ interface SeatMapProps {
 }
 
 const generateSeatLayout = (busType: BusType): SeatLayout => {
-  const rows = busType === 'Airconditioned' ? 10 : 12;
-  const seatsPerRow = busType === 'Airconditioned' ? 4 : 5; // 2-2 or 2-aisle-3
-  const aisleIndex = 2;
+  const layout: SeatLayout = { mainSeatRows: [], rearBenchRow: [] };
+  const ROWNUMS = Array.from({ length: 12 }, (_, i) => i + 1); // Rows 1 to 12
+  const REAR_BENCH_SEAT_COUNT = 5;
 
-  let layout: SeatLayout = { rows: [] };
-  let seatCounter = 1;
+  if (busType === 'Traditional') {
+    // 4 columns of seats (A, B, C, D) for 12 rows. Aisle after B. (2-aisle-2)
+    // (4 seats * 12 rows) = 48 main seats
+    // 5 rear bench seats
+    // Total = 53
+    const COLS = ['A', 'B', 'C', 'D'];
+    const AISLE_AFTER_COL_LETTER = 'B';
 
-  for (let r = 0; r < rows; r++) {
-    const row: (Seat | null)[] = [];
-    for (let s = 0; s < seatsPerRow; s++) {
-      if (busType === 'Airconditioned' && s === aisleIndex) {
-        row.push(null); // Aisle for 2-2
-      } else if (busType === 'Traditional' && s === aisleIndex) {
-        row.push(null); // Aisle for 2-aisle-3
-      }
-      else {
+    ROWNUMS.forEach(rowNum => {
+      const rowArray: (Seat | null)[] = [];
+      COLS.forEach(colLetter => {
         // Mock some reserved seats
         const isReserved = Math.random() < 0.2;
-        row.push({
-          id: `${String.fromCharCode(65 + r)}${seatCounter}`,
-          label: `${String.fromCharCode(65 + r)}${seatCounter}`,
+        rowArray.push({
+          id: `${colLetter}${rowNum}`,
+          label: `${colLetter}${rowNum}`,
           status: isReserved ? 'reserved' : 'available',
         });
-        seatCounter++;
-      }
+        if (colLetter === AISLE_AFTER_COL_LETTER) {
+          rowArray.push(null); // Aisle
+        }
+      });
+      layout.mainSeatRows.push(rowArray);
+    });
+
+    for (let i = 1; i <= REAR_BENCH_SEAT_COUNT; i++) {
+      const isReserved = Math.random() < 0.1;
+      layout.rearBenchRow.push({
+        id: `R${i}`,
+        label: `R${i}`,
+        status: isReserved ? 'reserved' : 'available',
+      });
     }
-    if (busType === 'Traditional') seatCounter = 1; // Reset for next row labels like A1, A2, B1, B2
-    else seatCounter = (r * (seatsPerRow - (busType === 'Airconditioned' ? 1:1) )) +1;
 
+  } else if (busType === 'Airconditioned') {
+    // 5 columns of seats (A, B, C, D, E) for 12 rows. Aisle after B. (2-aisle-3)
+    // (5 seats * 12 rows) = 60 main seats
+    // 5 rear bench seats
+    // Total = 65
+    const COLS = ['A', 'B', 'C', 'D', 'E'];
+    const AISLE_AFTER_COL_LETTER = 'B';
 
-    layout.rows.push(row);
+    ROWNUMS.forEach(rowNum => {
+      const rowArray: (Seat | null)[] = [];
+      COLS.forEach(colLetter => {
+        const isReserved = Math.random() < 0.2;
+        rowArray.push({
+          id: `${colLetter}${rowNum}`,
+          label: `${colLetter}${rowNum}`,
+          status: isReserved ? 'reserved' : 'available',
+        });
+        if (colLetter === AISLE_AFTER_COL_LETTER) {
+          rowArray.push(null); // Aisle
+        }
+      });
+      layout.mainSeatRows.push(rowArray);
+    });
+    
+    for (let i = 1; i <= REAR_BENCH_SEAT_COUNT; i++) {
+      const isReserved = Math.random() < 0.1;
+      layout.rearBenchRow.push({
+        id: `R${i}`,
+        label: `R${i}`,
+        status: isReserved ? 'reserved' : 'available',
+      });
+    }
   }
   return layout;
 };
@@ -53,7 +92,7 @@ export function SeatMap({ busType }: SeatMapProps) {
 
   useEffect(() => {
     setSeatLayout(generateSeatLayout(busType));
-    setSelectedSeats([]); // Reset selected seats when bus type changes
+    setSelectedSeats([]); // Reset selected seats when bus type or layout changes
   }, [busType]);
 
 
@@ -79,12 +118,14 @@ export function SeatMap({ busType }: SeatMapProps) {
       status === 'available' && !isSelected && "bg-green-200/30 border-green-500 text-green-700 hover:bg-green-300/50",
       status === 'available' && isSelected && "bg-primary border-primary/70 text-primary-foreground ring-2 ring-offset-2 ring-offset-card ring-primary",
       status === 'reserved' && "bg-muted border-muted-foreground text-muted-foreground cursor-not-allowed opacity-60",
-      status === 'selected' && "bg-primary border-primary/70 text-primary-foreground ring-2 ring-offset-2 ring-offset-card ring-primary", // Legacy, now handled by isSelected
+      // status === 'selected' is now covered by 'available' && isSelected
     );
   };
   
   // Calculate column widths for grid based on bus type
-  const gridColsClass = busType === 'Airconditioned' ? 'grid-cols-5' : 'grid-cols-5'; // 2-aisle-2 vs 2-aisle-3, +1 for row labels
+  // Traditional: A, B, Aisle, C, D (5 visual columns)
+  // Airconditioned: A, B, Aisle, C, D, E (6 visual columns)
+  const gridColsClass = busType === 'Airconditioned' ? 'grid-cols-6' : 'grid-cols-5';
 
   return (
     <div className="p-4 bg-card-foreground/5 rounded-lg shadow">
@@ -94,15 +135,13 @@ export function SeatMap({ busType }: SeatMapProps) {
         <div className="flex items-center"><Armchair className="w-5 h-5 mr-2 text-muted-foreground opacity-60" /> Reserved</div>
       </div>
 
-      {/* Bus front indicator */}
       <div className="mb-4 p-2 bg-muted text-muted-foreground text-center rounded-md font-semibold">
         FRONT OF BUS
       </div>
 
       <div className={`grid ${gridColsClass} gap-2 max-w-md mx-auto select-none`}>
-        {seatLayout.rows.map((row, rowIndex) => (
-          <>
-            {/* Row Label on the left if needed, for now, we'll simplify */}
+        {seatLayout.mainSeatRows.map((row, rowIndex) => (
+          <React.Fragment key={`main-row-${rowIndex}`}>
             {row.map((seat, seatIndex) => (
               seat ? (
                 <div
@@ -119,12 +158,37 @@ export function SeatMap({ busType }: SeatMapProps) {
                 <div key={`aisle-${rowIndex}-${seatIndex}`} className="w-10 h-10" /> // Aisle spacer
               )
             ))}
-          </>
+          </React.Fragment>
         ))}
       </div>
       
+      {seatLayout.rearBenchRow.length > 0 && (
+        <div className="mt-8 pt-4 border-t border-border">
+          <div className="mb-3 p-2 bg-muted text-muted-foreground text-center rounded-md font-semibold">
+            REAR BENCH
+          </div>
+          <div className="flex justify-center items-center gap-2 flex-wrap max-w-md mx-auto">
+            {seatLayout.rearBenchRow.map(seat => (
+              seat ? ( // Should always be a seat object based on generation logic
+                <div
+                  key={seat.id}
+                  className={getSeatClassName(seat.status, seat.id)}
+                  onClick={() => handleSeatClick(seat.id, seat.status)}
+                  role="button"
+                  aria-pressed={selectedSeats.includes(seat.id)}
+                  aria-label={`Seat ${seat.label}, Status: ${selectedSeats.includes(seat.id) ? 'selected' : seat.status}`}
+                >
+                  <span className="text-xs font-medium">{seat.label}</span>
+                </div>
+              ) : null 
+            ))}
+          </div>
+        </div>
+      )}
+      
       <div className="mt-6 text-center">
         <p className="text-muted-foreground">Selected Seats: {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}</p>
+        {/* TODO: Add logic to calculate total price based on selectedSeats and trip.price */}
       </div>
     </div>
   );

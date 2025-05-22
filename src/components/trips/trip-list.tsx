@@ -9,8 +9,8 @@ const mockTrips: Trip[] = [
     departureTime: "08:00 AM",
     arrivalTime: "11:00 AM",
     busType: "Airconditioned",
-    availableSeats: 15,
-    totalSeats: 45,
+    availableSeats: 50, // Example, could be dynamic
+    totalSeats: 65,     // Updated: 5*12 main + 5 rear
     price: 250,
     origin: "Mantalongon",
     destination: "Cebu City",
@@ -21,8 +21,8 @@ const mockTrips: Trip[] = [
     departureTime: "09:30 AM",
     arrivalTime: "01:00 PM",
     busType: "Traditional",
-    availableSeats: 30,
-    totalSeats: 60,
+    availableSeats: 40, // Example
+    totalSeats: 53,     // Updated: 4*12 main + 5 rear
     price: 180,
     origin: "Mantalongon",
     destination: "Cebu City",
@@ -32,8 +32,8 @@ const mockTrips: Trip[] = [
     departureTime: "11:00 AM",
     arrivalTime: "02:30 PM",
     busType: "Airconditioned",
-    availableSeats: 5,
-    totalSeats: 40,
+    availableSeats: 10, // Example
+    totalSeats: 65,     // Updated
     price: 260,
     origin: "Mantalongon",
     destination: "Cebu City",
@@ -44,8 +44,8 @@ const mockTrips: Trip[] = [
     departureTime: "01:00 PM",
     arrivalTime: "04:30 PM",
     busType: "Traditional",
-    availableSeats: 45,
-    totalSeats: 60,
+    availableSeats: 53, // Example, full
+    totalSeats: 53,     // Updated
     price: 180,
     origin: "Mantalongon",
     destination: "Cebu City",

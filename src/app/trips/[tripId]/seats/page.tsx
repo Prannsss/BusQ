@@ -10,8 +10,10 @@ import Link from "next/link";
 async function getTripDetails(tripId: string): Promise<Trip | null> {
   // In a real app, fetch this from your data source
   const mockTrips: Trip[] = [
-    { id: "1", departureTime: "08:00 AM", arrivalTime: "11:00 AM", busType: "Airconditioned", availableSeats: 15, totalSeats: 45, price: 250, origin: "Mantalongon", destination: "Cebu City" },
-    { id: "2", departureTime: "09:30 AM", arrivalTime: "01:00 PM", busType: "Traditional", availableSeats: 30, totalSeats: 60, price: 180, origin: "Mantalongon", destination: "Cebu City" },
+    { id: "1", departureTime: "08:00 AM", arrivalTime: "11:00 AM", busType: "Airconditioned", availableSeats: 50, totalSeats: 65, price: 250, origin: "Mantalongon", destination: "Cebu City" },
+    { id: "2", departureTime: "09:30 AM", arrivalTime: "01:00 PM", busType: "Traditional", availableSeats: 40, totalSeats: 53, price: 180, origin: "Mantalongon", destination: "Cebu City" },
+    { id: "3", departureTime: "11:00 AM", arrivalTime: "02:30 PM", busType: "Airconditioned", availableSeats: 10, totalSeats: 65, price: 260, origin: "Mantalongon", destination: "Cebu City" },
+    { id: "4", departureTime: "01:00 PM", arrivalTime: "04:30 PM", busType: "Traditional", availableSeats: 53, totalSeats: 53, price: 180, origin: "Mantalongon", destination: "Cebu City" },
   ];
   return mockTrips.find(trip => trip.id === tripId) || null;
 }
@@ -32,8 +34,8 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
     );
   }
   
-  // Calculate total price based on selected seats (mock for now)
-  const selectedSeatsCount = 2; // Example: 2 seats selected
+  // This is a placeholder. In a real app, selectedSeatsCount would come from SeatMap state.
+  const selectedSeatsCount = 0; // Example: 0 seats selected initially
   const totalPrice = trip.price * selectedSeatsCount;
 
   return (
@@ -51,9 +53,10 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
           <Card className="shadow-xl">
             <CardHeader>
               <CardTitle className="text-2xl text-primary">Bus Layout ({trip.busType})</CardTitle>
-              <CardDescription>Click on available seats to select them.</CardDescription>
+              <CardDescription>Click on available seats to select them. Total seats: {trip.totalSeats}</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Pass trip data to SeatMap if it needs price or other details for selections */}
               <SeatMap busType={trip.busType} />
             </CardContent>
           </Card>
@@ -80,15 +83,20 @@ export default async function SeatSelectionPage({ params }: { params: { tripId: 
               <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><Armchair className="h-4 w-4 mr-2" /> Seats Selected:</span>
-                <span className="font-semibold">{selectedSeatsCount}</span>
+                {/* This should be dynamically updated based on SeatMap's state */}
+                <span className="font-semibold" id="selected-seats-count">{selectedSeatsCount}</span> 
               </div>
               <div className="flex items-center justify-between text-lg">
                 <span className="text-muted-foreground">Total Price:</span>
-                <span className="font-bold text-primary">PHP {totalPrice.toFixed(2)}</span>
+                {/* This should be dynamically updated */}
+                <span className="font-bold text-primary" id="total-price">PHP {totalPrice.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>
-          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6">
+          <Button 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
+            // onClick={() => { /* Implement actual reservation logic */ alert("Reservation logic not yet implemented.")}}
+          >
             Confirm Reservation
           </Button>
           <Link href="/trips" className="w-full">
