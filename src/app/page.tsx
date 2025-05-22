@@ -14,7 +14,7 @@ export default function HomePage() {
         </p>
       </header>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl w-full mb-12">
+      <div className="grid md:grid-cols-2 gap-8 max-w-xl w-full mb-12">
         <FeatureCard
           icon={<Bus className="w-10 h-10 text-primary" />}
           title="View Trips"
@@ -28,13 +28,6 @@ export default function HomePage() {
           description="Track your bus in real-time on its journey. Know exactly when to expect its arrival."
           link="/tracking"
           linkText="Track a Bus"
-        />
-        <FeatureCard
-          icon={<Ticket className="w-10 h-10 text-primary" />}
-          title="Smart Departures"
-          description="Get AI-powered suggestions for optimal departure times to avoid traffic and travel smoothly."
-          link="/suggestions"
-          linkText="Get Suggestions"
         />
       </div>
       

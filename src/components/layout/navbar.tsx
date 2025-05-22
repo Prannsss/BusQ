@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Bus, LogIn, Map, MessageSquareQuote, Ticket, UserPlus, Home } from "lucide-react";
+import { Bus, LogIn, Map, Ticket, UserPlus, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/", label: "Home", icon: <Home className="h-4 w-4" /> },
   { href: "/trips", label: "Trips", icon: <Bus className="h-4 w-4" /> },
   { href: "/tracking", label: "Track Bus", icon: <Map className="h-4 w-4" /> },
-  { href: "/suggestions", label: "Suggestions", icon: <MessageSquareQuote className="h-4 w-4" /> },
+  // { href: "/suggestions", label: "Suggestions", icon: <MessageSquareQuote className="h-4 w-4" /> },
 ];
 
 const authLinks = [

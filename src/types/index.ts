@@ -42,7 +42,8 @@ export interface User {
   name?: string;
 }
 
-export interface DepartureSuggestion {
-  time: string;
-  reasoning?: string; // Why this time is good
-}
+// Removed DepartureSuggestion type as it's no longer used
+// export interface DepartureSuggestion {
+//   time: string;
+//   reasoning?: string; // Why this time is good
+// }
