@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Seat, SeatLayout, SeatStatus, BusType } from '@/types';
+import React, { useState, useEffect } from 'react';
+import type { Seat, SeatLayout, SeatStatus, BusType } from '@/types';
 import { cn } from '@/lib/utils';
 import { Armchair } from 'lucide-react';
 
@@ -27,7 +27,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
       const rowArray: (Seat | null)[] = [];
       COLS.forEach(colLetter => {
         // Mock some reserved seats
-        const isReserved = Math.random() < 0.2;
+        const isReserved = Math.random() < 0.2; // This Math.random is okay for initial UI, reservation status would come from backend
         rowArray.push({
           id: `${colLetter}${rowNum}`,
           label: `${colLetter}${rowNum}`,
@@ -41,7 +41,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
     });
 
     for (let i = 1; i <= REAR_BENCH_SEAT_COUNT; i++) {
-      const isReserved = Math.random() < 0.1;
+      const isReserved = Math.random() < 0.1; // Okay for UI mock
       layout.rearBenchRow.push({
         id: `R${i}`,
         label: `R${i}`,
@@ -60,7 +60,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
     ROWNUMS.forEach(rowNum => {
       const rowArray: (Seat | null)[] = [];
       COLS.forEach(colLetter => {
-        const isReserved = Math.random() < 0.2;
+        const isReserved = Math.random() < 0.2; // Okay for UI mock
         rowArray.push({
           id: `${colLetter}${rowNum}`,
           label: `${colLetter}${rowNum}`,
@@ -74,7 +74,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
     });
     
     for (let i = 1; i <= REAR_BENCH_SEAT_COUNT; i++) {
-      const isReserved = Math.random() < 0.1;
+      const isReserved = Math.random() < 0.1; // Okay for UI mock
       layout.rearBenchRow.push({
         id: `R${i}`,
         label: `R${i}`,
@@ -118,13 +118,9 @@ export function SeatMap({ busType }: SeatMapProps) {
       status === 'available' && !isSelected && "bg-green-200/30 border-green-500 text-green-700 hover:bg-green-300/50",
       status === 'available' && isSelected && "bg-primary border-primary/70 text-primary-foreground ring-2 ring-offset-2 ring-offset-card ring-primary",
       status === 'reserved' && "bg-muted border-muted-foreground text-muted-foreground cursor-not-allowed opacity-60",
-      // status === 'selected' is now covered by 'available' && isSelected
     );
   };
   
-  // Calculate column widths for grid based on bus type
-  // Traditional: A, B, Aisle, C, D (5 visual columns)
-  // Airconditioned: A, B, Aisle, C, D, E (6 visual columns)
   const gridColsClass = busType === 'Airconditioned' ? 'grid-cols-6' : 'grid-cols-5';
 
   return (
@@ -169,7 +165,7 @@ export function SeatMap({ busType }: SeatMapProps) {
           </div>
           <div className="flex justify-center items-center gap-2 flex-wrap max-w-md mx-auto">
             {seatLayout.rearBenchRow.map(seat => (
-              seat ? ( // Should always be a seat object based on generation logic
+              seat ? ( 
                 <div
                   key={seat.id}
                   className={getSeatClassName(seat.status, seat.id)}
@@ -188,7 +184,6 @@ export function SeatMap({ busType }: SeatMapProps) {
       
       <div className="mt-6 text-center">
         <p className="text-muted-foreground">Selected Seats: {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}</p>
-        {/* TODO: Add logic to calculate total price based on selectedSeats and trip.price */}
       </div>
     </div>
   );
