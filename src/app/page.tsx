@@ -1,3 +1,93 @@
-export default function Home() {
-  return <></>;
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bus, MapPin, Ticket, ArrowRight, LogIn, UserPlus } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+
+export default function HomePage() {
+  return (
+    <div className="flex flex-col items-center justify-center text-center">
+      <header className="my-12">
+        <h1 className="text-5xl font-bold text-primary">Highlander Tracker</h1>
+        <p className="mt-4 text-xl text-muted-foreground">
+          Your Journey, Simplified. Book seats, track buses, and travel smart.
+        </p>
+      </header>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl w-full mb-12">
+        <FeatureCard
+          icon={<Bus className="w-10 h-10 text-primary" />}
+          title="View Trips"
+          description="Explore available trips from Mantalongon to Cebu City. Filter by bus type and find your perfect ride."
+          link="/trips"
+          linkText="Browse Trips"
+        />
+        <FeatureCard
+          icon={<MapPin className="w-10 h-10 text-primary" />}
+          title="Real-Time Tracking"
+          description="Track your bus in real-time on its journey. Know exactly when to expect its arrival."
+          link="/tracking"
+          linkText="Track a Bus"
+        />
+        <FeatureCard
+          icon={<Ticket className="w-10 h-10 text-primary" />}
+          title="Smart Departures"
+          description="Get AI-powered suggestions for optimal departure times to avoid traffic and travel smoothly."
+          link="/suggestions"
+          linkText="Get Suggestions"
+        />
+      </div>
+      
+      <div className="mb-12">
+        <Image 
+            src="https://placehold.co/800x400.png" 
+            alt="Scenic route placeholder" 
+            width={800} 
+            height={400} 
+            className="rounded-lg shadow-lg"
+            data-ai-hint="mountain road" 
+        />
+      </div>
+
+      <div className="flex gap-4">
+        <Link href="/login" passHref>
+          <Button variant="outline" size="lg">
+            <LogIn className="mr-2 h-5 w-5" /> Login
+          </Button>
+        </Link>
+        <Link href="/signup" passHref>
+          <Button variant="default" size="lg">
+            <UserPlus className="mr-2 h-5 w-5" /> Sign Up
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  link: string;
+  linkText: string;
+}
+
+function FeatureCard({ icon, title, description, link, linkText }: FeatureCardProps) {
+  return (
+    <Card className="bg-card border-border shadow-xl hover:shadow-primary/30 transition-shadow duration-300">
+      <CardHeader className="items-center">
+        {icon}
+        <CardTitle className="mt-4 text-2xl">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="text-center">
+        <CardDescription>{description}</CardDescription>
+        <Link href={link} passHref>
+          <Button variant="ghost" className="mt-6 text-primary hover:text-primary/80">
+            {linkText} <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
+  );
 }

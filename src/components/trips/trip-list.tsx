@@ -1,0 +1,76 @@
+import { Trip } from "@/types";
+import { TripCard } from "./trip-card";
+import { AlertTriangle } from "lucide-react";
+
+// Mock data for trips
+const mockTrips: Trip[] = [
+  {
+    id: "1",
+    departureTime: "08:00 AM",
+    arrivalTime: "11:00 AM",
+    busType: "Airconditioned",
+    availableSeats: 15,
+    totalSeats: 45,
+    price: 250,
+    origin: "Mantalongon",
+    destination: "Cebu City",
+    busPlateNumber: "XYZ 123"
+  },
+  {
+    id: "2",
+    departureTime: "09:30 AM",
+    arrivalTime: "01:00 PM",
+    busType: "Traditional",
+    availableSeats: 30,
+    totalSeats: 60,
+    price: 180,
+    origin: "Mantalongon",
+    destination: "Cebu City",
+  },
+  {
+    id: "3",
+    departureTime: "11:00 AM",
+    arrivalTime: "02:30 PM",
+    busType: "Airconditioned",
+    availableSeats: 5,
+    totalSeats: 40,
+    price: 260,
+    origin: "Mantalongon",
+    destination: "Cebu City",
+    busPlateNumber: "ABC 789"
+  },
+  {
+    id: "4",
+    departureTime: "01:00 PM",
+    arrivalTime: "04:30 PM",
+    busType: "Traditional",
+    availableSeats: 45,
+    totalSeats: 60,
+    price: 180,
+    origin: "Mantalongon",
+    destination: "Cebu City",
+  },
+];
+
+export function TripList() {
+  // In a real app, trips would be fetched from an API
+  const trips = mockTrips;
+
+  if (trips.length === 0) {
+    return (
+      <div className="text-center py-10 text-muted-foreground">
+        <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
+        <p className="text-xl">No trips available at the moment.</p>
+        <p>Please check back later or adjust your filters.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {trips.map((trip) => (
+        <TripCard key={trip.id} trip={trip} />
+      ))}
+    </div>
+  );
+}
