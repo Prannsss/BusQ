@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -49,25 +50,27 @@ export function Navbar() {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="flex items-center space-x-2"> {/* Changed from hidden md:flex */}
             {authLinks.map((link) => (
                <Link key={link.href} href={link.href} passHref>
                 <Button
                   variant={link.label === "Sign Up" ? "default" : "outline"}
                   className={cn(
+                    "text-sm px-3 py-1.5 md:px-4 md:py-2", // Adjusted padding for smaller screens
                     pathname === link.href && "ring-2 ring-primary"
                   )}
                 >
                   {link.icon}
-                   <span className="ml-2">{link.label}</span>
+                   <span className="ml-1.5 md:ml-2">{link.label}</span> {/* Adjusted margin for smaller screens */}
                 </Button>
               </Link>
             ))}
           </div>
           
           {/* Mobile Menu Button (optional, not implemented here) */}
+          {/* The div below is only shown on mobile, if you want to add a hamburger icon here */}
           <div className="md:hidden">
-            {/* Hamburger icon could go here */}
+            {/* Example: <Button variant="ghost" size="icon"><Menu className="h-6 w-6" /></Button> */}
           </div>
         </div>
       </div>
