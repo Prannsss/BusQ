@@ -13,7 +13,7 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
-  SheetTitle, // Added SheetTitle
+  SheetTitle,
 } from "@/components/ui/sheet";
 // import { Separator } from "@/components/ui/separator";
 
@@ -71,7 +71,7 @@ export function Navbar() {
                   variant={link.label === "Sign Up" ? "default" : "outline"}
                   className={cn(
                     "text-sm px-3 py-1.5 md:px-4 md:py-2",
-                     link.label === "Sign Up" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "text-accent-foreground border-accent hover:bg-accent/20",
+                     link.label === "Sign Up" ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground",
                     pathname === link.href && "ring-2 ring-primary"
                   )}
                 >
@@ -133,7 +133,7 @@ export function Navbar() {
                           "flex items-center justify-center space-x-3 px-3 py-3 rounded-md text-base font-medium text-center",
                            link.label === "Sign Up" 
                              ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                             : "text-accent-foreground border border-accent hover:bg-accent/20",
+                             : "text-primary-foreground border border-accent hover:bg-accent/20 hover:text-primary-foreground",
                            pathname === link.href && "ring-2 ring-offset-2 ring-offset-card ring-primary"
                         )}
                       >
