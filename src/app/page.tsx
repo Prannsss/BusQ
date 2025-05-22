@@ -42,18 +42,7 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="flex gap-4">
-        <Link href="/login" passHref>
-          <Button variant="outline" size="lg">
-            <LogIn className="mr-2 h-5 w-5" /> Login
-          </Button>
-        </Link>
-        <Link href="/signup" passHref>
-          <Button variant="default" size="lg">
-            <UserPlus className="mr-2 h-5 w-5" /> Sign Up
-          </Button>
-        </Link>
-      </div>
+      {/* Login and Signup buttons removed from here */}
     </div>
   );
 }
