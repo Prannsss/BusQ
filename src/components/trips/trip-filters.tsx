@@ -9,9 +9,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { FilterableBusType, FilterableTripDirection, TripDirection } from "@/types";
+import type { FilterableBusType, FilterableTripDirection } from "@/types";
 import { Card, CardContent } from "../ui/card";
-import { Filter, Route } from "lucide-react";
+import { Filter } from "lucide-react";
 
 interface TripFiltersProps {
   activeBusTypeFilter: FilterableBusType;

@@ -1,8 +1,8 @@
 
-import type { Trip, FilterableBusType, TripStatus, BusType } from "@/types";
+import type { Trip, FilterableBusType, TripStatus, BusType, FilterableTripDirection } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
-import { format, addMinutes, parse } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 
 // Fixed Schedule Configuration
 const FIXED_SCHEDULE_A_TO_B: Array<{ time: string; busType: BusType }> = [
@@ -48,19 +48,20 @@ const generateTodaysTrips = (): Trip[] => {
       
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
       const totalSeatsForType = item.busType === "Airconditioned" ? 65 : 53;
-      // Deterministic available seats to prevent hydration errors
+      // Deterministic available seats
       const availableSeatsForType = item.busType === "Airconditioned" 
-        ? Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 7 % 60) + 5)) 
-        : Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 5 % 50) + 3));
+        ? Math.max(0, Math.min(totalSeatsForType, parseInt(tripIdCounter.toString().slice(-1) + "7", 10) % 60) + 5) // Example: id 1 -> 17%60+5
+        : Math.max(0, Math.min(totalSeatsForType, parseInt(tripIdCounter.toString().slice(-1) + "5", 10) % 50) + 3); // Example: id 1 -> 15%50+3
       
-      // Deterministic price to prevent hydration errors
+      // Deterministic price
       const basePrice = item.busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (tripIdCounter * 5 % 40) + 10; // Variation between 10 and 50
+      // Use a simple modulo operation on tripIdCounter for price variation
+      const priceVariation = (tripIdCounter * 13 % 41); // Variation between 0 and 40
       const finalPrice = basePrice + priceVariation;
 
       allTrips.push({
         id: `trip-${tripIdCounter++}`,
-        busId: `bus-${tripIdCounter % 100 + 1}`, // This Math.random is fine as busId is not directly causing hydration diffs in visible UI text
+        busId: `bus-${tripIdCounter % 100 + 1}`,
         direction,
         origin,
         destination,
@@ -92,14 +93,14 @@ const mockTrips: Trip[] = generateTodaysTrips();
 
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
-  // activeDirectionFilter: FilterableTripDirection; // Removed
+  activeDirectionFilter: FilterableTripDirection;
 }
 
-export function TripList({ activeBusTypeFilter }: TripListProps) { // Removed activeDirectionFilter
+export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
   const filteredTrips = mockTrips.filter(trip => {
     const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
-    // const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter; // Removed
-    return busTypeMatch; // && directionMatch; // Removed
+    const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
+    return busTypeMatch && directionMatch;
   });
 
   if (filteredTrips.length === 0) {
@@ -120,4 +121,3 @@ export function TripList({ activeBusTypeFilter }: TripListProps) { // Removed ac
     </div>
   );
 }
-
