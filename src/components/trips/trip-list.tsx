@@ -1,5 +1,5 @@
 
-import type { Trip, FilterableBusType, TripDirection, TripStatus, BusType, FilterableTripDirection } from "@/types";
+import type { Trip, FilterableBusType, TripStatus, BusType } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
 import { format, addMinutes, parse } from 'date-fns';
@@ -37,7 +37,7 @@ const generateTodaysTrips = (): Trip[] => {
 
   const createTripsForSchedule = (
     schedule: Array<{ time: string; busType: BusType }>,
-    direction: TripDirection,
+    direction: Trip["direction"],
     origin: string,
     destination: string
   ) => {
@@ -52,11 +52,15 @@ const generateTodaysTrips = (): Trip[] => {
       const availableSeatsForType = item.busType === "Airconditioned" 
         ? Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 7 % 60) + 5)) 
         : Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 5 % 50) + 3));
-
+      
+      // Deterministic price to prevent hydration errors
+      const basePrice = item.busType === "Airconditioned" ? 250 : 180;
+      const priceVariation = (tripIdCounter * 5 % 40) + 10; // Variation between 10 and 50
+      const finalPrice = basePrice + priceVariation;
 
       allTrips.push({
         id: `trip-${tripIdCounter++}`,
-        busId: `bus-${Math.floor(Math.random() * 100) + 1}`, // This Math.random is fine as busId is not directly causing hydration diffs in visible UI text
+        busId: `bus-${tripIdCounter % 100 + 1}`, // This Math.random is fine as busId is not directly causing hydration diffs in visible UI text
         direction,
         origin,
         destination,
@@ -67,7 +71,7 @@ const generateTodaysTrips = (): Trip[] => {
         busType: item.busType,
         availableSeats: availableSeatsForType,
         totalSeats: totalSeatsForType,
-        price: item.busType === "Airconditioned" ? (Math.random() * 50 + 250) : (Math.random() * 50 + 180), // Price Math.random also less likely to cause direct hydration text mismatch unless formatted differently
+        price: finalPrice, 
         tripDate: todayStr,
         status: "Scheduled" as TripStatus, // Initial status
         busPlateNumber: `XYZ ${tripIdCounter % 100}${tripIdCounter % 10}`
@@ -88,14 +92,14 @@ const mockTrips: Trip[] = generateTodaysTrips();
 
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
-  activeDirectionFilter: FilterableTripDirection;
+  // activeDirectionFilter: FilterableTripDirection; // Removed
 }
 
-export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
+export function TripList({ activeBusTypeFilter }: TripListProps) { // Removed activeDirectionFilter
   const filteredTrips = mockTrips.filter(trip => {
     const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
-    const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
-    return busTypeMatch && directionMatch;
+    // const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter; // Removed
+    return busTypeMatch; // && directionMatch; // Removed
   });
 
   if (filteredTrips.length === 0) {
@@ -116,3 +120,4 @@ export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripLis
     </div>
   );
 }
+

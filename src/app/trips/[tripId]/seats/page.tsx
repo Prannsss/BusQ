@@ -49,6 +49,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         const availableSeatsForType = item.busType === "Airconditioned" 
           ? Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 7 % 60) + 5)) 
           : Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 5 % 50) + 3));
+        
+        // Deterministic price to prevent hydration errors
+        const basePrice = item.busType === "Airconditioned" ? 250 : 180;
+        const priceVariation = (tripIdCounter * 5 % 40) + 10; // Variation between 10 and 50 for this specific mock generation
+        const finalPrice = basePrice + priceVariation;
   
         allTrips.push({
           id: `trip-${tripIdCounter++}`, busId: `bus-${tripIdCounter % 5}`, direction, origin, destination,
@@ -57,7 +62,8 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
           busType: item.busType, 
           availableSeats: availableSeatsForType,
           totalSeats: totalSeatsForType,
-          price: item.busType === "Airconditioned" ? 260 : 180, tripDate: todayStr, status: "Scheduled" as TripStatus,
+          price: finalPrice, 
+          tripDate: todayStr, status: "Scheduled" as TripStatus,
         });
       });
     };
