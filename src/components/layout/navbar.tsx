@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from "react"; // Moved to the top
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export function Navbar() {
           </div>
 
           {/* Desktop Auth Buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2">
             {authLinks.map((link) => (
                <Link key={link.href} href={link.href} passHref>
                 <Button
@@ -89,7 +89,7 @@ export function Navbar() {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] bg-card p-0 pt-6 flex flex-col">
+              <SheetContent side="right" className="w-[280px] bg-card p-0 pt-6 flex flex-col">
                 <div className="px-4 mb-6">
                    <Link href="/" passHref onClick={closeMobileMenu}>
                     <div className="flex items-center space-x-2 cursor-pointer">
