@@ -1,7 +1,8 @@
+
 import { Reservation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Ticket, Bus, CalendarDays, Clock, Tag, Hash } from "lucide-react";
+import { User, Ticket, Bus, CalendarDays, Clock, Tag, Hash, Route, MapPin } from "lucide-react";
 
 interface ReceiptDetailsProps {
   reservation: Reservation;
@@ -17,8 +18,16 @@ export function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
         <InfoRow icon={<Hash className="h-5 w-5 text-primary" />} label="Reservation ID" value={reservation.id} />
         <Separator className="bg-border" />
         <InfoRow icon={<User className="h-5 w-5 text-primary" />} label="Passenger Name" value={reservation.passengerName} />
+        {reservation.origin && reservation.selectedDestination && (
+          <InfoRow 
+            icon={<Route className="h-5 w-5 text-primary" />} 
+            label="Route" 
+            value={`${reservation.origin} to ${reservation.selectedDestination}`} 
+          />
+        )}
+        <InfoRow icon={<MapPin className="h-5 w-5 text-primary" />} label="Your Destination" value={reservation.selectedDestination} />
         <InfoRow icon={<Bus className="h-5 w-5 text-primary" />} label="Bus Type" value={reservation.busType} />
-        <InfoRow icon={<CalendarDays className="h-5 w-5 text-primary" />} label="Departure Date" value="Today (Example)" /> {/* Assuming current date for mock */}
+        {reservation.tripDate && <InfoRow icon={<CalendarDays className="h-5 w-5 text-primary" />} label="Departure Date" value={reservation.tripDate} /> }
         <InfoRow icon={<Clock className="h-5 w-5 text-primary" />} label="Departure Time" value={reservation.departureTime} />
         <InfoRow icon={<Ticket className="h-5 w-5 text-primary" />} label="Seat Number(s)" value={reservation.seatNumbers.join(", ")} />
         <Separator className="bg-border" />

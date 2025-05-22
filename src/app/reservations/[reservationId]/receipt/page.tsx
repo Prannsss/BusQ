@@ -1,20 +1,26 @@
+
 import { ReceiptDetails } from "@/components/reservations/receipt-details";
 import { Reservation } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Download, Info, Printer } from "lucide-react";
 import Link from "next/link";
+import { format } from "date-fns";
 
 // Mock function to get reservation details
 async function getReservationDetails(reservationId: string): Promise<Reservation | null> {
+  // In a real app, this would fetch from a database
   if (reservationId === "mock-reservation-123") {
     return {
       id: "mock-reservation-123",
       passengerName: "Juan Dela Cruz",
-      tripId: "1",
+      tripId: "trip-5", // Example trip ID, ensure it might exist in seat page mock
       seatNumbers: ["A1", "A2"],
       busType: "Airconditioned",
-      departureTime: "08:00 AM",
+      departureTime: "08:00 AM", // This is illustrative, actual time from trip
       totalAmount: 500,
+      origin: "Mantalongon",
+      selectedDestination: "Cebu City",
+      tripDate: format(new Date(), "yyyy-MM-dd"),
     };
   }
   return null;

@@ -1,12 +1,11 @@
 
-import type { Trip, FilterableBusType, TripStatus, BusType, FilterableTripDirection, CebuDestination } from "@/types";
-import { cebuDestinationsList } from "@/types";
+import type { Trip, FilterableBusType, TripStatus, BusType, FilterableTripDirection, TripDirection } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
 import { format, addMinutes } from 'date-fns';
 
 // Fixed Schedule Configuration
-const FIXED_SCHEDULE_A_TO_B: Array<{ time: string; busType: BusType }> = [
+const FIXED_SCHEDULE_MANTALONGON_TO_CEBU: Array<{ time: string; busType: BusType }> = [
   { time: "02:45", busType: "Traditional" },
   { time: "03:20", busType: "Traditional" },
   { time: "04:00", busType: "Traditional" },
@@ -17,7 +16,7 @@ const FIXED_SCHEDULE_A_TO_B: Array<{ time: string; busType: BusType }> = [
   { time: "13:00", busType: "Traditional" },
 ];
 
-const FIXED_SCHEDULE_B_TO_A: Array<{ time: string; busType: BusType }> = [ // Schedule for routes FROM Cebu
+const FIXED_SCHEDULE_CEBU_TO_MANTALONGON: Array<{ time: string; busType: BusType }> = [
   { time: "07:00", busType: "Traditional" },
   { time: "08:00", busType: "Traditional" },
   { time: "09:00", busType: "Traditional" },
@@ -42,7 +41,7 @@ const generateTodaysTrips = (): Trip[] => {
     busType: BusType,
     direction: TripDirection,
     origin: string,
-    destination: string,
+    destination: string, // This is now the final destination of the route
     currentTripId: number
   ): Trip => {
     const [hours, minutes] = departureTimeStr.split(':').map(Number);
@@ -50,22 +49,23 @@ const generateTodaysTrips = (): Trip[] => {
     departureDateTime.setHours(hours, minutes, 0, 0);
     
     const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
+    // Deterministic seat availability based on tripIdCounter
     const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-    
-    const availableSeatsForType = busType === "Airconditioned" 
-      ? Math.max(0, Math.min(totalSeatsForType, (currentTripId * 7 % 60) + 5)) 
-      : Math.max(0, Math.min(totalSeatsForType, (currentTripId * 5 % 50) + 3));
-    
+    const baseAvailable = busType === "Airconditioned" ? 40 : 30;
+    const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable + (currentTripId % 25) - 10));
+
+
+    // Deterministic price based on busType and tripIdCounter
     const basePrice = busType === "Airconditioned" ? 250 : 180;
-    const priceVariation = (currentTripId * 13 % 41); 
-    const finalPrice = basePrice + priceVariation;
+    const priceVariation = (currentTripId * 13 % 41) - 20; // Ensure some variation
+    const finalPrice = Math.max(basePrice * 0.8, basePrice + priceVariation); // Ensure price is not too low
 
     return {
       id: `trip-${currentTripId}`,
       busId: `bus-${currentTripId % 100 + 1}`,
       direction,
       origin,
-      destination,
+      destination, // Final destination of this bus route
       departureTime: departureTimeStr, 
       arrivalTime: format(arrivalDateTime, "HH:mm"),
       travelDurationMins: TRAVEL_DURATION_MINS,
@@ -80,16 +80,14 @@ const generateTodaysTrips = (): Trip[] => {
     };
   };
 
-  // Generate trips from Mantalongon to Cebu City
-  FIXED_SCHEDULE_A_TO_B.forEach(item => {
+  // Generate trips from Mantalongon to Cebu City (final destination)
+  FIXED_SCHEDULE_MANTALONGON_TO_CEBU.forEach(item => {
     allTrips.push(createTrip(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
   });
 
-  // Generate trips from Cebu City to various destinations
-  FIXED_SCHEDULE_B_TO_A.forEach(item => {
-    cebuDestinationsList.forEach(destinationTown => {
-      allTrips.push(createTrip(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", destinationTown, tripIdCounter++));
-    });
+  // Generate trips from Cebu City to Mantalongon (final destination)
+  FIXED_SCHEDULE_CEBU_TO_MANTALONGON.forEach(item => {
+    allTrips.push(createTrip(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
   });
   
   allTrips.sort((a, b) => {
@@ -108,24 +106,12 @@ const mockTrips: Trip[] = generateTodaysTrips();
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
   activeDirectionFilter: FilterableTripDirection;
-  selectedCebuDestination: CebuDestination;
 }
 
-export function TripList({ activeBusTypeFilter, activeDirectionFilter, selectedCebuDestination }: TripListProps) {
+export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
   const filteredTrips = mockTrips.filter(trip => {
     const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
-    
-    let directionMatch = false;
-    if (activeDirectionFilter === "all") {
-      directionMatch = true;
-    } else if (activeDirectionFilter === "Mantalongon_to_Cebu") {
-      directionMatch = trip.direction === "Mantalongon_to_Cebu";
-    } else if (activeDirectionFilter === "Cebu_to_Mantalongon") { // This now means "Origin: Cebu"
-      directionMatch = trip.origin === "Cebu City";
-      if (directionMatch && selectedCebuDestination !== "all") {
-        directionMatch = trip.destination === selectedCebuDestination;
-      }
-    }
+    const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
     return busTypeMatch && directionMatch;
   });
 

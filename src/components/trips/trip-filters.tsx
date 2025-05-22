@@ -9,8 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { FilterableBusType, FilterableTripDirection, CebuDestination } from "@/types";
-import { cebuDestinationsList } from "@/types"; // Import the list
+import type { FilterableBusType, FilterableTripDirection } from "@/types";
 import { Card, CardContent } from "../ui/card";
 import { Filter } from "lucide-react";
 
@@ -19,8 +18,6 @@ interface TripFiltersProps {
   onBusTypeFilterChange: (value: FilterableBusType) => void;
   activeDirectionFilter: FilterableTripDirection;
   onDirectionFilterChange: (value: FilterableTripDirection) => void;
-  selectedCebuDestination: CebuDestination;
-  onCebuDestinationChange: (value: CebuDestination) => void;
 }
 
 export function TripFilters({ 
@@ -28,8 +25,6 @@ export function TripFilters({
     onBusTypeFilterChange,
     activeDirectionFilter,
     onDirectionFilterChange,
-    selectedCebuDestination,
-    onCebuDestinationChange
 }: TripFiltersProps) {
   
   const handleBusTypeChange = (value: string) => {
@@ -38,14 +33,6 @@ export function TripFilters({
 
   const handleDirectionChange = (value: string) => {
     onDirectionFilterChange(value as FilterableTripDirection);
-    // Reset Cebu destination if direction is not from Cebu
-    if (value !== "Cebu_to_Mantalongon") {
-      onCebuDestinationChange("all");
-    }
-  };
-
-  const handleCebuDestinationChange = (value: string) => {
-    onCebuDestinationChange(value as CebuDestination);
   };
 
   return (
@@ -71,23 +58,6 @@ export function TripFilters({
                   </SelectContent>
               </Select>
             </div>
-
-            {activeDirectionFilter === "Cebu_to_Mantalongon" && (
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Label htmlFor="cebu-destination-select" className="text-muted-foreground whitespace-nowrap">Destination:</Label>
-                <Select value={selectedCebuDestination} onValueChange={handleCebuDestinationChange}>
-                    <SelectTrigger id="cebu-destination-select" className="w-full sm:w-[240px] bg-input border-border focus:ring-primary">
-                    <SelectValue placeholder="Select destination from Cebu" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border-popover">
-                    <SelectItem value="all">All Cebu Destinations</SelectItem>
-                    {cebuDestinationsList.map(dest => (
-                        <SelectItem key={dest} value={dest}>{dest}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Label htmlFor="bus-type-select" className="text-muted-foreground whitespace-nowrap">Bus Type:</Label>
