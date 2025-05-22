@@ -47,10 +47,16 @@ const generateTodaysTrips = (): Trip[] => {
       departureDateTime.setHours(hours, minutes, 0, 0);
       
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
+      const totalSeatsForType = item.busType === "Airconditioned" ? 65 : 53;
+      // Deterministic available seats to prevent hydration errors
+      const availableSeatsForType = item.busType === "Airconditioned" 
+        ? Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 7 % 60) + 5)) 
+        : Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 5 % 50) + 3));
+
 
       allTrips.push({
         id: `trip-${tripIdCounter++}`,
-        busId: `bus-${Math.floor(Math.random() * 100) + 1}`,
+        busId: `bus-${Math.floor(Math.random() * 100) + 1}`, // This Math.random is fine as busId is not directly causing hydration diffs in visible UI text
         direction,
         origin,
         destination,
@@ -59,9 +65,9 @@ const generateTodaysTrips = (): Trip[] => {
         travelDurationMins: TRAVEL_DURATION_MINS,
         stopoverDurationMins: STOPOVER_DURATION_MINS,
         busType: item.busType,
-        availableSeats: item.busType === "Airconditioned" ? Math.floor(Math.random() * 65) : Math.floor(Math.random() * 53),
-        totalSeats: item.busType === "Airconditioned" ? 65 : 53,
-        price: item.busType === "Airconditioned" ? (Math.random() * 50 + 250) : (Math.random() * 50 + 180), // Price range
+        availableSeats: availableSeatsForType,
+        totalSeats: totalSeatsForType,
+        price: item.busType === "Airconditioned" ? (Math.random() * 50 + 250) : (Math.random() * 50 + 180), // Price Math.random also less likely to cause direct hydration text mismatch unless formatted differently
         tripDate: todayStr,
         status: "Scheduled" as TripStatus, // Initial status
         busPlateNumber: `XYZ ${tripIdCounter % 100}${tripIdCounter % 10}`

@@ -31,7 +31,7 @@ const STOPOVER_DURATION_MINS_SEATS = 60;
 const generateMockTripsForSeatsPage = (): Trip[] => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const allTrips: Trip[] = [];
-    let tripIdCounter = 1;
+    let tripIdCounter = 1; // Independent counter for this instance
   
     const createTrips = (
       schedule: Array<{ time: string; busType: BusType }>,
@@ -44,13 +44,19 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         const departureDateTime = new Date(todayStr);
         departureDateTime.setHours(hours, minutes, 0, 0);
         const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
+        const totalSeatsForType = item.busType === "Airconditioned" ? 65 : 53;
+        // Deterministic available seats to prevent hydration errors
+        const availableSeatsForType = item.busType === "Airconditioned" 
+          ? Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 7 % 60) + 5)) 
+          : Math.max(0, Math.min(totalSeatsForType, (tripIdCounter * 5 % 50) + 3));
   
         allTrips.push({
           id: `trip-${tripIdCounter++}`, busId: `bus-${tripIdCounter % 5}`, direction, origin, destination,
           departureTime: item.time, arrivalTime: format(arrivalDateTime, "HH:mm"),
           travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
-          busType: item.busType, availableSeats: Math.floor(Math.random() * (item.busType === "Airconditioned" ? 65 : 53)),
-          totalSeats: item.busType === "Airconditioned" ? 65 : 53,
+          busType: item.busType, 
+          availableSeats: availableSeatsForType,
+          totalSeats: totalSeatsForType,
           price: item.busType === "Airconditioned" ? 260 : 180, tripDate: todayStr, status: "Scheduled" as TripStatus,
         });
       });
