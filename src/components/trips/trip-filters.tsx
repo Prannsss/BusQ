@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -9,17 +8,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { BusType } from "@/types";
+import type { FilterableBusType } from "@/types";
 import { Card, CardContent } from "../ui/card";
 import { Filter } from "lucide-react";
 
-export function TripFilters() {
-  const [busType, setBusType] = useState<BusType | "all">("all");
+interface TripFiltersProps {
+  activeFilter: FilterableBusType;
+  onFilterChange: (value: FilterableBusType) => void;
+}
 
+export function TripFilters({ activeFilter, onFilterChange }: TripFiltersProps) {
   const handleBusTypeChange = (value: string) => {
-    setBusType(value as BusType | "all");
-    // TODO: Implement actual filtering logic
-    console.log("Selected bus type:", value);
+    onFilterChange(value as FilterableBusType);
   };
 
   return (
@@ -33,7 +33,7 @@ export function TripFilters() {
             <div className="flex-grow"></div> {/* Spacer */}
             <div className="flex items-center gap-2">
             <Label htmlFor="bus-type-select" className="text-muted-foreground">Bus Type:</Label>
-            <Select value={busType} onValueChange={handleBusTypeChange}>
+            <Select value={activeFilter} onValueChange={handleBusTypeChange}>
                 <SelectTrigger id="bus-type-select" className="w-full sm:w-[200px] bg-input border-border focus:ring-primary">
                 <SelectValue placeholder="Select bus type" />
                 </SelectTrigger>

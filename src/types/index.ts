@@ -1,4 +1,5 @@
 export type BusType = "Traditional" | "Airconditioned";
+export type FilterableBusType = BusType | "all";
 
 export interface Trip {
   id: string;
@@ -41,9 +42,3 @@ export interface User {
   email: string;
   name?: string;
 }
-
-// Removed DepartureSuggestion type as it's no longer used
-// export interface DepartureSuggestion {
-//   time: string;
-//   reasoning?: string; // Why this time is good
-// }

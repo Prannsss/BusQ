@@ -1,4 +1,4 @@
-import { Trip } from "@/types";
+import type { Trip, FilterableBusType } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
 
@@ -52,15 +52,20 @@ const mockTrips: Trip[] = [
   },
 ];
 
-export function TripList() {
-  // In a real app, trips would be fetched from an API
-  const trips = mockTrips;
+interface TripListProps {
+  activeFilter: FilterableBusType;
+}
 
-  if (trips.length === 0) {
+export function TripList({ activeFilter }: TripListProps) {
+  const filteredTrips = mockTrips.filter(trip => 
+    activeFilter === "all" || trip.busType === activeFilter
+  );
+
+  if (filteredTrips.length === 0) {
     return (
       <div className="text-center py-10 text-muted-foreground">
         <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-        <p className="text-xl">No trips available at the moment.</p>
+        <p className="text-xl">No trips available for the selected filter.</p>
         <p>Please check back later or adjust your filters.</p>
       </div>
     );
@@ -68,7 +73,7 @@ export function TripList() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {trips.map((trip) => (
+      {filteredTrips.map((trip) => (
         <TripCard key={trip.id} trip={trip} />
       ))}
     </div>

@@ -1,9 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import { TripList } from "@/components/trips/trip-list";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { Separator } from "@/components/ui/separator";
 import { Bus } from "lucide-react";
+import type { FilterableBusType } from "@/types";
 
 export default function TripsPage() {
+  const [activeFilter, setActiveFilter] = useState<FilterableBusType>("all");
+
   return (
     <div className="space-y-8">
       <header className="text-center">
@@ -16,9 +22,12 @@ export default function TripsPage() {
         </p>
       </header>
       
-      <TripFilters />
+      <TripFilters 
+        activeFilter={activeFilter} 
+        onFilterChange={setActiveFilter} 
+      />
       <Separator className="my-6 bg-border" />
-      <TripList />
+      <TripList activeFilter={activeFilter} />
     </div>
   );
 }
