@@ -76,7 +76,7 @@ function FeatureCard({ icon, title, description, link, linkText }: FeatureCardPr
       <CardContent className="text-center">
         <CardDescription>{description}</CardDescription>
         <Link href={link} passHref>
-          <Button variant="ghost" className="mt-6 text-primary hover:text-primary/80">
+          <Button variant="ghost" className="mt-6 text-primary hover:bg-primary/10 hover:text-primary">
             {linkText} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>
