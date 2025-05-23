@@ -62,9 +62,9 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23)); 
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable));
 
-      // Deterministic price based on busType and tripId
+      // Deterministic price based on busType and tripId (consistent with trip-list)
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 13 % 40) - 20; 
+      const priceVariation = (currentTripId * 13 % 40) - 20; // Example variation, can be adjusted
       const finalPrice = parseFloat(Math.max(basePrice * 0.7, basePrice + priceVariation).toFixed(2));
 
 
@@ -109,7 +109,7 @@ async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
 
 export default function SeatSelectionPage() {
   const params = useParams<{ tripId: string }>();
-  const tripId = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
+  const tripIdParam = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
 
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -120,13 +120,13 @@ export default function SeatSelectionPage() {
 
   useEffect(() => {
     async function loadTrip() {
-      if (!tripId) {
+      if (!tripIdParam) {
         setTrip(null);
         setLoading(false);
         return;
       }
       setLoading(true);
-      const tripDetails = await getTripDetails(tripId);
+      const tripDetails = await getTripDetails(tripIdParam);
       setTrip(tripDetails);
       if (tripDetails) {
         // Default drop off to final destination if not Mantalongon or Cebu City for safety
@@ -138,7 +138,7 @@ export default function SeatSelectionPage() {
       setLoading(false);
     }
     loadTrip();
-  }, [tripId]); 
+  }, [tripIdParam]); 
 
   const regularFare = trip ? trip.price : 0;
   const isDiscountableType = passengerType === "Student" || passengerType === "Senior" || passengerType === "PWD";
@@ -190,7 +190,7 @@ export default function SeatSelectionPage() {
             passengerName: "Juan Dela Cruz", // Mock passenger name
             seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers
             userType: passengerType,
-            selectedDestination: selectedDropOff,
+            selectedDestination: selectedDropOff, // Use selectedDropOff
             regularFare: fareDetails.regularFare,
             discountApplied: fareDetails.discountApplied,
             finalFarePaid: fareDetails.finalFarePaid,
@@ -358,7 +358,7 @@ export default function SeatSelectionPage() {
           >
             {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
           </Button>
-          <Link href="/trips" className="w-full">
+          <Link href="/trips" className="w-full block"> {/* Added 'block' class here */}
             <Button variant="outline" className="w-full text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground">
               Cancel
             </Button>
