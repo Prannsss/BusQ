@@ -147,7 +147,8 @@ export default function ReservationReceiptPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `BusQ_Receipt_${reservation.id}.html`;
+    const formattedDate = format(new Date(), "MM-dd-yy");
+    a.download = `BusQ_receipt_${formattedDate}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
