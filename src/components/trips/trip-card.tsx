@@ -69,14 +69,14 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
                 className="rounded-t-lg"
                 data-ai-hint={busType === "Airconditioned" ? "modern bus interior" : "classic bus exterior"}
             />
-            <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-semibold ${busType === "Airconditioned" ? "bg-blue-600 text-blue-50" : "bg-yellow-600 text-yellow-50"}`}>
+            <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-semibold ${busType === "Airconditioned" ? "bg-sky-500 text-sky-50" : "bg-rose-500 text-rose-50"}`}>
                 {busType}
             </div>
              <Badge variant={getStatusBadgeVariant(status)} className={`absolute top-2 left-2 ${getStatusBadgeColors(status)}`}>
                 {status}
             </Badge>
         </div>
-        <CardTitle className="text-xl text-foreground">{origin} <Route className="inline h-5 w-5 mx-1 text-muted-foreground" /> {destination}</CardTitle>
+        <CardTitle className="text-foreground">{origin} <Route className="inline h-5 w-5 mx-1 text-muted-foreground" /> {destination}</CardTitle>
         <CardDescription className="text-muted-foreground flex items-center">
           <Clock className="h-4 w-4 mr-2" /> {departureTime} - {arrivalTime}
         </CardDescription>
@@ -113,4 +113,3 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
 });
 
 export { TripCard };
-
