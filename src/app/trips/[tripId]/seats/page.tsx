@@ -58,13 +58,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
       
-      // Deterministic available seats based on tripId
       const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23)); 
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable));
 
-      // Deterministic price based on busType and tripId (consistent with trip-list)
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 13 % 40) - 20; // Example variation, can be adjusted
+      const priceVariation = (currentTripId * 13 % 40) - 20; 
       const finalPrice = parseFloat(Math.max(basePrice * 0.7, basePrice + priceVariation).toFixed(2));
 
 
@@ -85,7 +83,6 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
     });
 
-    // For trips from Cebu, their final destination is Mantalongon
     FIXED_SCHEDULE_B_TO_A_SEATS.forEach(item => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
     });
@@ -129,10 +126,9 @@ export default function SeatSelectionPage() {
       const tripDetails = await getTripDetails(tripIdParam);
       setTrip(tripDetails);
       if (tripDetails) {
-        // Default drop off to final destination if not Mantalongon or Cebu City for safety
         const defaultDropOff = tripDetails.origin === "Mantalongon" 
-            ? mantalongonRouteStops[mantalongonRouteStops.length - 1] // Cebu City
-            : cebuRouteStops[cebuRouteStops.length - 1]; // Mantalongon
+            ? mantalongonRouteStops[mantalongonRouteStops.length - 1] 
+            : cebuRouteStops[cebuRouteStops.length - 1]; 
         setSelectedDropOff(tripDetails.destination || defaultDropOff);
       }
       setLoading(false);
@@ -179,22 +175,18 @@ export default function SeatSelectionPage() {
         passengerType: passengerType,
         selectedDropOff: selectedDropOff,
     };
-    // In a real app, navigate to a confirmation/payment page, then to receipt.
-    // For now, we mock the ID and navigate directly.
     const mockReservationId = "mock-reservation-123"; 
-    // Store fareDetails in localStorage or pass via query params if needed by receipt page (for mock)
-    // This is not ideal for production.
     if (typeof window !== 'undefined') {
         localStorage.setItem('mockReservationDetails', JSON.stringify({
-            ...trip, // Pass trip details
-            passengerName: "Juan Dela Cruz", // Mock passenger name
-            seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers
+            ...trip, 
+            passengerName: "Juan Dela Cruz", 
+            seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), 
             userType: passengerType,
-            selectedDestination: selectedDropOff, // Use selectedDropOff
+            selectedDestination: selectedDropOff, 
             regularFare: fareDetails.regularFare,
             discountApplied: fareDetails.discountApplied,
             finalFarePaid: fareDetails.finalFarePaid,
-            id: mockReservationId, // Add reservation ID here
+            id: mockReservationId, 
         }));
         window.location.href = `/reservations/${mockReservationId}/receipt`;
     } else {
@@ -237,7 +229,7 @@ export default function SeatSelectionPage() {
           </Card>
         </div>
 
-        <div className="md:col-span-1 space-y-6">
+        <div className="md:col-span-1 flex flex-col space-y-6">
           <Card className="shadow-xl">
             <CardHeader>
               <CardTitle className="text-xl text-primary">Trip & Fare Summary</CardTitle>
@@ -350,19 +342,20 @@ export default function SeatSelectionPage() {
                 </div>
             </CardContent>
           </Card>
-
-          <Button
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
-            disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0}
-            onClick={handleConfirmReservation}
-          >
-            {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
-          </Button>
-          <Link href="/trips" className="w-full block"> {/* Added 'block' class here */}
-            <Button variant="outline" className="w-full text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground">
-              Cancel
+          <div className="mt-auto space-y-2 pt-6">
+            <Button
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
+                disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0}
+                onClick={handleConfirmReservation}
+            >
+                {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
             </Button>
-          </Link>
+            <Link href="/trips" className="w-full block">
+                <Button variant="outline" className="w-full text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground">
+                Cancel
+                </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
