@@ -15,6 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 
 const navLinks = [
   { href: "/", label: "Home", icon: <Home className="h-4 w-4 md:h-4 md:w-4 lg:h-5 lg:w-5" /> },
@@ -34,7 +35,7 @@ export function Navbar() {
       const user = localStorage.getItem('busqLoggedInUser');
       setIsLoggedIn(!!user);
     }
-  }, [pathname]); // Re-check on route change
+  }, [pathname]); 
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
@@ -171,10 +172,12 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center space-x-2">
+            <ThemeToggleButton />
             <DesktopAuthButtons />
           </div>
           
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            <ThemeToggleButton />
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
