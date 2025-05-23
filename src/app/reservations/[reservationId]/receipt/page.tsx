@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import { ReceiptDetails } from "@/components/reservations/receipt-details";
 import { Reservation, PassengerType } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Download, Info, Printer, CheckCircle } from "lucide-react"; // Added CheckCircle
+import { Download, Info, CheckCircle } from "lucide-react"; // Added CheckCircle
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -195,7 +195,7 @@ export default function ReservationReceiptPage() {
           variant="outline" 
           size="lg"
           onClick={() => router.push('/')}
-          className="text-accent-foreground border-accent hover:bg-accent/20"
+          className="text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground"
         >
           Done
         </Button>
