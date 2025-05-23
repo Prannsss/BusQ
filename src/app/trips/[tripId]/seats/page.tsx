@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import { SeatMap } from "@/components/seats/seat-map";
 import { Trip, BusType, TripStatus, TripDirection, mantalongonRouteStops, cebuRouteStops, PassengerType, passengerTypes } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -122,6 +122,7 @@ async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
 
 export default function SeatSelectionPage() {
   const params = useParams<{ tripId: string }>();
+  const router = useRouter(); // Initialize useRouter
   const tripIdParam = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -207,11 +208,7 @@ export default function SeatSelectionPage() {
     const isUserLoggedIn = false; // Change to true to test the payment flow
 
     if (!isUserLoggedIn) {
-      alert("Please log in or sign up to complete your reservation.");
-      // In a real app, you might redirect to login:
-      // import { useRouter } from 'next/navigation';
-      // const router = useRouter();
-      // router.push('/login');
+      router.push('/login'); // Redirect to login page
       return;
     }
     
@@ -232,13 +229,14 @@ export default function SeatSelectionPage() {
       regularFareTotal: regularFareTotalForBooking,
       discountApplied: discountApplied,
       amountDue: amountDueForBooking,
-      // finalFarePaid will be set after payment
+      paymentType: undefined, // Will be set on payment page
+      amountPaid: undefined, // Will be set on payment page
       finalFarePaid: 0, // Placeholder, will be updated after payment
     };
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('pendingReservation', JSON.stringify(reservationDataForPayment));
-      window.location.href = '/payment';
+      window.location.href = '/payment'; // Use window.location to ensure full page load for localStorage access
     }
   };
 
@@ -401,3 +399,5 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
+
+
