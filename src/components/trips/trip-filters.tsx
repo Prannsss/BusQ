@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react"; // Import React for React.memo
 import {
   Select,
   SelectContent,
@@ -20,7 +21,8 @@ interface TripFiltersProps {
   onDirectionFilterChange: (value: FilterableTripDirection) => void;
 }
 
-export function TripFilters({ 
+// Wrap TripFilters with React.memo
+const TripFilters = React.memo(function TripFilters({ 
     activeBusTypeFilter, 
     onBusTypeFilterChange,
     activeDirectionFilter,
@@ -76,4 +78,6 @@ export function TripFilters({
       </CardContent>
     </Card>
   );
-}
+});
+
+export { TripFilters };

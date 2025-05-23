@@ -1,4 +1,5 @@
 
+import React from "react"; // Import React for React.memo
 import type { Trip } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,8 @@ const getStatusBadgeColors = (status: Trip["status"]): string => {
     }
 }
 
-export function TripCard({ trip }: TripCardProps) {
+// Wrap TripCard with React.memo
+const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
   const { id, departureTime, arrivalTime, busType, availableSeats, totalSeats, price, origin, destination, status, tripDate } = trip;
 
   const isBookable = status === "Scheduled" || status === "On Standby";
@@ -107,4 +109,6 @@ export function TripCard({ trip }: TripCardProps) {
       </CardFooter>
     </Card>
   );
-}
+});
+
+export { TripCard };

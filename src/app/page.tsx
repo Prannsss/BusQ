@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bus, MapPin, Ticket, ArrowRight, LogIn, UserPlus } from "lucide-react";
@@ -38,7 +39,8 @@ export default function HomePage() {
             width={800} 
             height={400} 
             className="rounded-lg shadow-lg"
-            data-ai-hint="mountain road" 
+            data-ai-hint="mountain road"
+            priority 
         />
       </div>
 

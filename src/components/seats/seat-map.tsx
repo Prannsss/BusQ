@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // React is already imported
 import type { Seat, SeatLayout, SeatStatus, BusType } from '@/types';
 import { cn } from '@/lib/utils';
 import { Armchair } from 'lucide-react';
@@ -82,8 +82,8 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
   return layout;
 };
 
-
-export function SeatMap({ busType, onSeatSelectionChange }: SeatMapProps) {
+// Wrap SeatMap with React.memo
+const SeatMap = React.memo(function SeatMap({ busType, onSeatSelectionChange }: SeatMapProps) {
   const [seatLayout, setSeatLayout] = useState<SeatLayout | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
@@ -192,4 +192,6 @@ export function SeatMap({ busType, onSeatSelectionChange }: SeatMapProps) {
       </div>
     </div>
   );
-}
+});
+
+export { SeatMap };
