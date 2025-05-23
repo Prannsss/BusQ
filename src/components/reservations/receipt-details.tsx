@@ -2,14 +2,14 @@
 import { Reservation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Ticket, Bus, CalendarDays, Clock, Tag, Hash, Route, MapPin, UserCircle, Percent } from "lucide-react";
+import { User, Ticket, Bus, CalendarDays, Clock, Tag, Hash, Route, MapPin, UserCircle, Percent, DollarSign, CreditCard } from "lucide-react";
 
 interface ReceiptDetailsProps {
   reservation: Reservation;
 }
 
 export function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
-  const discountAmount = reservation.regularFare - reservation.finalFarePaid;
+  const discountAmount = reservation.regularFareTotal - reservation.amountDue;
 
   return (
     <Card className="shadow-xl border-primary/30">
@@ -29,14 +29,15 @@ export function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
             value={`${reservation.origin} to ${reservation.selectedDestination}`} 
           />
         )}
-        <InfoRow icon={<MapPin className="h-5 w-5 text-primary" />} label="Your Destination" value={reservation.selectedDestination} />
+        {/* Removed duplicate selectedDestination display, it's part of Route now */}
         <InfoRow icon={<Bus className="h-5 w-5 text-primary" />} label="Bus Type" value={reservation.busType} />
         {reservation.tripDate && <InfoRow icon={<CalendarDays className="h-5 w-5 text-primary" />} label="Departure Date" value={reservation.tripDate} /> }
         <InfoRow icon={<Clock className="h-5 w-5 text-primary" />} label="Departure Time" value={reservation.departureTime} />
         <InfoRow icon={<Ticket className="h-5 w-5 text-primary" />} label="Seat Number(s)" value={reservation.seatNumbers.join(", ")} />
         <Separator className="bg-border" />
 
-        <InfoRow icon={<Tag className="h-5 w-5 text-primary" />} label="Regular Fare" value={`PHP ${reservation.regularFare.toFixed(2)}`} />
+        <h4 className="text-md font-semibold text-primary-foreground pt-2">Fare Breakdown:</h4>
+        <InfoRow icon={<Tag className="h-5 w-5 text-muted-foreground" />} label="Total Regular Fare" value={`PHP ${reservation.regularFareTotal.toFixed(2)}`} />
         {reservation.discountApplied && (
           <InfoRow 
             icon={<Percent className="h-5 w-5 text-green-500" />} 
@@ -45,14 +46,31 @@ export function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
             valueClassName="text-green-500"
           />
         )}
-        <Separator className="my-1 bg-border" />
-        <div className="flex justify-between items-center pt-2">
-          <div className="flex items-center text-lg font-semibold">
-            <Tag className="h-6 w-6 text-primary mr-2" />
-            Total Amount Paid:
-          </div>
-          <span className="text-xl font-bold text-primary">PHP {reservation.finalFarePaid.toFixed(2)}</span>
-        </div>
+        <InfoRow icon={<DollarSign className="h-5 w-5 text-muted-foreground" />} label="Amount Due (After Discount)" value={`PHP ${reservation.amountDue.toFixed(2)}`} />
+        
+        {reservation.paymentType && reservation.amountPaid !== undefined && (
+          <>
+            <Separator className="my-1 bg-border" />
+             <h4 className="text-md font-semibold text-primary-foreground pt-2">Payment Details:</h4>
+            <InfoRow 
+                icon={<CreditCard className="h-5 w-5 text-primary" />} 
+                label="Payment Type" 
+                value={reservation.paymentType === "deposit" ? "30% Deposit" : "Full Payment"} 
+            />
+            <div className="flex justify-between items-center pt-2">
+              <div className="flex items-center text-lg font-semibold">
+                <DollarSign className="h-6 w-6 text-primary mr-2" />
+                Total Amount Paid:
+              </div>
+              <span className="text-xl font-bold text-primary">PHP {reservation.finalFarePaid.toFixed(2)}</span>
+            </div>
+            {reservation.paymentType === "deposit" && (
+                <p className="text-xs text-muted-foreground text-center pt-2">
+                    Remaining balance of PHP {(reservation.amountDue - reservation.finalFarePaid).toFixed(2)} to be paid to the bus conductor.
+                </p>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );

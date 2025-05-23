@@ -162,11 +162,8 @@ export default function SeatSelectionPage() {
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
-      // If the selected drop-off is the trip's actual final destination, use the trip's full price.
-      // This should ideally also be covered by the matrix for clarity.
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
-      // Fallback if a stop isn't in the matrix or for any other unhandled case.
       console.warn(`Fare not found in FARE_MATRIX for destination: "${selectedDropOff}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
       setDynamicRegularFarePerSeat(fullRoutePrice);
     }
@@ -181,7 +178,9 @@ export default function SeatSelectionPage() {
     ? dynamicRegularFarePerSeat * (1 - discountRate)
     : dynamicRegularFarePerSeat;
 
-  const totalPrice = calculatedFarePerSeat * selectedSeatsCount;
+  const regularFareTotalForBooking = dynamicRegularFarePerSeat * selectedSeatsCount;
+  const amountDueForBooking = calculatedFarePerSeat * selectedSeatsCount;
+
 
   if (loading) {
     return <div className="text-center py-10 text-muted-foreground">Loading trip details...</div>;
@@ -204,40 +203,42 @@ export default function SeatSelectionPage() {
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
-    const regularFareForBooking = dynamicRegularFarePerSeat * selectedSeatsCount;
-    const finalFareForBooking = totalPrice;
+    // MOCK: Simulate user login status
+    const isUserLoggedIn = false; // Change to true to test the payment flow
 
-    const fareDetails = {
-        regularFare: regularFareForBooking,
-        discountApplied: discountApplied,
-        finalFarePaid: finalFareForBooking,
-        passengerType: passengerType,
-        selectedDropOff: selectedDropOff,
+    if (!isUserLoggedIn) {
+      alert("Please log in or sign up to complete your reservation.");
+      // In a real app, you might redirect to login:
+      // import { useRouter } from 'next/navigation';
+      // const router = useRouter();
+      // router.push('/login');
+      return;
+    }
+    
+    // If logged in, proceed to prepare for payment page
+    if (!trip) return; // Should not happen if button is enabled
+
+    const reservationDataForPayment = {
+      id: "mock-reservation-123", // Keep consistent for receipt page for now
+      passengerName: "Juan Dela Cruz", // Mock passenger name
+      tripId: trip.id,
+      seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers
+      busType: trip.busType,
+      departureTime: trip.departureTime,
+      origin: trip.origin,
+      selectedDestination: selectedDropOff,
+      tripDate: trip.tripDate,
+      userType: passengerType,
+      regularFareTotal: regularFareTotalForBooking,
+      discountApplied: discountApplied,
+      amountDue: amountDueForBooking,
+      // finalFarePaid will be set after payment
+      finalFarePaid: 0, // Placeholder, will be updated after payment
     };
-    const mockReservationId = "mock-reservation-123"; 
+
     if (typeof window !== 'undefined') {
-        localStorage.setItem('mockReservationDetails', JSON.stringify({
-            ...trip, 
-            passengerName: "Juan Dela Cruz", 
-            seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), 
-            userType: passengerType,
-            selectedDestination: selectedDropOff, 
-            regularFare: fareDetails.regularFare,
-            discountApplied: fareDetails.discountApplied,
-            finalFarePaid: fareDetails.finalFarePaid,
-            id: mockReservationId, 
-        }));
-        window.location.href = `/reservations/${mockReservationId}/receipt`;
-    } else {
-        alert(
-            `Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff}.\n` +
-            `Passenger Type: ${fareDetails.passengerType}\n` +
-            `Regular Fare/Seat: PHP ${dynamicRegularFarePerSeat.toFixed(2)}\n` +
-            (fareDetails.discountApplied ? `Discount (20%): -PHP ${(dynamicRegularFarePerSeat * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
-            `Final Price/Seat: PHP ${calculatedFarePerSeat.toFixed(2)}\n`+
-            `Total Price: PHP ${fareDetails.finalFarePaid.toFixed(2)}\n` +
-            `(Functionality not yet implemented).`
-        );
+      localStorage.setItem('pendingReservation', JSON.stringify(reservationDataForPayment));
+      window.location.href = '/payment';
     }
   };
 
@@ -319,8 +320,8 @@ export default function SeatSelectionPage() {
                 <span className="font-semibold" id="selected-seats-count">{selectedSeatsCount}</span>
               </div>
               <div className="flex items-center justify-between text-lg">
-                <span className="text-muted-foreground">Total Price:</span>
-                <span className="font-bold text-primary" id="total-price">PHP {totalPrice.toFixed(2)}</span>
+                <span className="text-muted-foreground">Total Amount Due:</span>
+                <span className="font-bold text-primary" id="total-price">PHP {amountDueForBooking.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>
@@ -400,4 +401,3 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
-

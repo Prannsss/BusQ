@@ -49,7 +49,7 @@ export interface Trip {
   busType: BusType;
   availableSeats: number;
   totalSeats: number;
-  price: number; // Price for the full route to final destination - this will be treated as regularFare
+  price: number; // Price for the full route to final destination
   tripDate: string;
   status: TripStatus;
   busPlateNumber?: string;
@@ -83,14 +83,19 @@ export interface Reservation {
   selectedDestination: string; 
   tripDate?: string; 
   userType: PassengerType;
-  regularFare: number;
+  
+  regularFareTotal: number; // Total regular fare for selected seats before any discounts
   discountApplied: boolean;
-  finalFarePaid: number; // Renamed from totalAmount for clarity
+  amountDue: number; // Total amount due after discounts but BEFORE payment options
+  
+  paymentType?: "deposit" | "full"; // Set on payment page
+  amountPaid?: number; // Actual amount paid by the user, set on payment page
+  finalFarePaid: number; // This will be the actual amountPaid. Renaming for consistency from previous use.
 }
 
 export interface User {
   id: string;
   email: string;
   name?: string;
-  userType?: PassengerType; // Added userType to User model
+  userType?: PassengerType; 
 }
