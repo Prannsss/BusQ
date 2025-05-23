@@ -12,14 +12,14 @@ import { format } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 
 // Mock function to get reservation details - now reads from localStorage
-async function getReservationDetails(reservationId: string): Promise<Reservation | null> {
+async function getReservationDetails(id: string): Promise<Reservation | null> {
   if (typeof window !== 'undefined') {
     const storedReservation = localStorage.getItem('mockReservationDetails');
     if (storedReservation) {
       try {
         const parsedReservation: Reservation = JSON.parse(storedReservation);
         // Ensure it's the correct reservation if multiple are stored, or if id matters
-        if (parsedReservation.id === reservationId) {
+        if (parsedReservation.id === id) {
           return parsedReservation;
         }
       } catch (error) {
@@ -30,7 +30,8 @@ async function getReservationDetails(reservationId: string): Promise<Reservation
   }
 
   // Fallback mock if not found in localStorage or for server-side rendering (though this page is client-side)
-  if (reservationId === "mock-reservation-123") {
+  // This fallback should ideally not be hit if the payment flow sets 'mockReservationDetails'
+  if (id === "mock-reservation-123") {
     const regularFareTotal = 250 * 2; // Example for 2 seats
     const userType: PassengerType = "Student"; 
     const discountApplied = userType === "Student" || userType === "Senior" || userType === "PWD";
@@ -120,26 +121,30 @@ function generateReceiptHtml(reservation: Reservation): string {
 
 
 export default function ReservationReceiptPage() {
-  const params = useParams<{ reservationId: string }>();
+  const routeParams = useParams<{ reservationId: string }>();
   const router = useRouter();
-  const reservationId = params?.reservationId ? (Array.isArray(params.reservationId) ? params.reservationId[0] : params.reservationId) : undefined;
+  
+  let currentReservationId: string | undefined;
+  if (routeParams?.reservationId) {
+    currentReservationId = Array.isArray(routeParams.reservationId) ? routeParams.reservationId[0] : routeParams.reservationId;
+  }
 
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!reservationId) {
+    if (!currentReservationId) {
       router.push('/trips'); // Redirect if no reservationId
       return;
     }
 
     async function loadReservation() {
-      const details = await getReservationDetails(reservationId!);
+      const details = await getReservationDetails(currentReservationId!);
       setReservation(details);
       setLoading(false);
     }
     loadReservation();
-  }, [reservationId, router]);
+  }, [currentReservationId, router]);
 
   const handleDownloadHtmlReceipt = () => {
     if (!reservation) return;
