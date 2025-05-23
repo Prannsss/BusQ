@@ -1,6 +1,7 @@
 
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation'; // Import useParams
 import { SeatMap } from "@/components/seats/seat-map";
 import { Trip, BusType, TripStatus, TripDirection, mantalongonRouteStops, cebuRouteStops, PassengerType, passengerTypes } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -47,7 +48,7 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       busType: BusType,
       direction: TripDirection,
       origin: string,
-      finalDestination: string, 
+      finalDestination: string,
       currentTripId: number
     ): Trip => {
       const [hours, minutes] = departureTimeStr.split(':').map(Number);
@@ -56,17 +57,20 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-      
-      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 10)) : (30 + (currentTripId % 10));
-      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable ));
 
+      // Deterministic available seats based on tripId
+      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 15)) : (30 + (currentTripId % 13));
+      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable));
+
+      // Deterministic price based on busType and tripId
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 17 % 31) - 15; 
-      const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
+      const priceVariation = (currentTripId * 17 % 30); // Consistent variation
+      const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation - 15).toFixed(2));
+
 
       return {
         id: `trip-${currentTripId}`, busId: `bus-${currentTripId % 5}`, direction, origin,
-        destination: finalDestination, 
+        destination: finalDestination,
         departureTime: departureTimeStr, arrivalTime: format(arrivalDateTime, "HH:mm"),
         travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
         busType: busType,
@@ -84,7 +88,7 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
     FIXED_SCHEDULE_B_TO_A_SEATS.forEach(item => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
     });
-    
+
     allTrips.sort((a, b) => {
         const timeComp = a.departureTime.localeCompare(b.departureTime);
         if (timeComp !== 0) return timeComp;
@@ -101,9 +105,12 @@ async function getTripDetails(tripId: string): Promise<Trip | null> {
   return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripId) || null;
 }
 
+export default function SeatSelectionPage() {
+  const routeParams = useParams<{ tripId: string }>();
+  // Ensure tripId is a string, as useParams can return string | string[]
+  // Also handles the case where routeParams might be null initially.
+  const tripId = routeParams?.tripId ? (Array.isArray(routeParams.tripId) ? routeParams.tripId[0] : routeParams.tripId) : undefined;
 
-export default function SeatSelectionPage({ params }: { params: { tripId: string } }) {
-  const { tripId } = params; 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
   const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
@@ -112,26 +119,33 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
 
   useEffect(() => {
     async function loadTrip() {
+      if (!tripId) {
+        // If tripId is not yet available from params, don't attempt to load
+        // You might want to set trip to null and loading to false or handle differently
+        setTrip(null);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
-      const tripDetails = await getTripDetails(tripId); 
+      const tripDetails = await getTripDetails(tripId);
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination); 
+        setSelectedDropOff(tripDetails.destination);
       }
       setLoading(false);
     }
     loadTrip();
-  }, [tripId]); 
+  }, [tripId]); // Depend on tripId obtained from useParams
 
   const regularFare = trip ? trip.price : 0;
   const isDiscountableType = passengerType === "Student" || passengerType === "Senior" || passengerType === "PWD";
   const discountApplied = isDiscountableType;
   const discountRate = 0.20; // 20% discount
-  
-  const calculatedFarePerSeat = discountApplied 
-    ? regularFare * (1 - discountRate) 
+
+  const calculatedFarePerSeat = discountApplied
+    ? regularFare * (1 - discountRate)
     : regularFare;
-  
+
   const totalPrice = calculatedFarePerSeat * selectedSeatsCount;
 
   if (loading) {
@@ -143,7 +157,7 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
       <div className="text-center py-10">
         <Info className="mx-auto h-12 w-12 text-destructive mb-4" />
         <h1 className="text-2xl font-semibold">Trip not found</h1>
-        <p className="text-muted-foreground">The requested trip could not be found.</p>
+        <p className="text-muted-foreground">The requested trip could not be found or an ID is missing.</p>
         <Link href="/trips">
           <Button variant="link" className="mt-4 text-primary">Go back to trips</Button>
         </Link>
@@ -158,7 +172,7 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
     // In a real app, this would interact with a backend.
     // Here, we simulate the fare calculation result in the alert.
     const fareDetails = {
-        regularFare: regularFare,
+        regularFare: regularFare * selectedSeatsCount, // regularFare is per seat, multiply by count
         discountApplied: discountApplied,
         finalFarePaid: totalPrice,
         passengerType: passengerType,
@@ -166,8 +180,8 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
     alert(
       `Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff}.\n` +
       `Passenger Type: ${fareDetails.passengerType}\n` +
-      `Regular Fare/Seat: PHP ${fareDetails.regularFare.toFixed(2)}\n` +
-      (fareDetails.discountApplied ? `Discount (20%): -PHP ${(fareDetails.regularFare * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
+      `Regular Fare/Seat: PHP ${regularFare.toFixed(2)}\n` +
+      (fareDetails.discountApplied ? `Discount (20%): -PHP ${(regularFare * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
       `Final Price/Seat: PHP ${calculatedFarePerSeat.toFixed(2)}\n`+
       `Total Price: PHP ${fareDetails.finalFarePaid.toFixed(2)}\n` +
       `(Functionality not yet implemented).`
@@ -340,3 +354,4 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
     </div>
   );
 }
+
