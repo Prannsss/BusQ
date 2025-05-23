@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import type { Reservation } from '@/types';
 import { Armchair, Bus, CalendarDays, Clock, CreditCard, DollarSign, MapPin, Percent, Route, Tag, UserCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 export default function PaymentPage() {
   const router = useRouter();
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast(); // Initialize useToast
 
   useEffect(() => {
     const storedReservation = localStorage.getItem('pendingReservation');
@@ -50,7 +52,12 @@ export default function PaymentPage() {
     }
 
     // Simulate payment success
-    alert(`Mock Payment Successful!\nAmount Paid: PHP ${amountToPay.toFixed(2)}\nPayment Type: ${paymentType === "deposit" ? "30% Deposit" : "Full Fare"}`);
+    toast({
+      title: "Mock Payment Successful!",
+      description: `Amount Paid: PHP ${amountToPay.toFixed(2)}\nPayment Type: ${paymentType === "deposit" ? "30% Deposit" : "Full Fare"}`,
+    });
+    // alert(`Mock Payment Successful!\nAmount Paid: PHP ${amountToPay.toFixed(2)}\nPayment Type: ${paymentType === "deposit" ? "30% Deposit" : "Full Fare"}`);
+
 
     const confirmedReservation: Reservation = {
       ...reservation,
