@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SeatMap } from "@/components/seats/seat-map";
-import type { Trip, BusType, TripStatus, TripDirection, MantalongonRouteStop, CebuRouteStop, PassengerType, passengerTypes, Reservation } from "@/types";
+import { type Trip, type BusType, type TripStatus, type TripDirection, type MantalongonRouteStop, type CebuRouteStop, type PassengerType, type Reservation, passengerTypes } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -53,9 +53,14 @@ const FARE_MATRIX: {
   "Minglanilla": { "Traditional": 150, "Airconditioned": 175 },
   "Talisay City": { "Traditional": 165, "Airconditioned": 190 },
   "Cebu City": { "Traditional": 180, "Airconditioned": 200 },
-  // Fares from Cebu City (reverse direction might have slightly different matrix or could be symmetric)
-  // For now, assuming symmetric for simplicity if not specified, but Cebu to Mantalongon is the full route.
-  "Mantalongon": { "Traditional": 180, "Airconditioned": 200 }
+  // Fares from Cebu City 
+  // Note: For trips from Cebu City, Mantalongon is usually the full route destination.
+  // Other stops would be intermediate.
+  "Mantalongon": { "Traditional": 180, "Airconditioned": 200 } 
+  // We'll add other Cebu-originating fares here if needed,
+  // or the logic can derive them if symmetric.
+  // For now, the existing matrix for Mantalongon-originating trips covers these points.
+  // If a trip is Cebu City -> Dalaguete, we can use the matrix for Dalaguete.
 };
 
 
@@ -86,11 +91,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-
+      
       const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-      const finalPrice = busType === "Airconditioned" ? 200 : 180; // Fixed price based on bus type
+      const finalPrice = busType === "Airconditioned" ? 200 : 180;
 
 
       return {
@@ -101,7 +106,7 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         busType: busType,
         availableSeats: availableSeatsForType,
         totalSeats: totalSeatsForType,
-        price: finalPrice,
+        price: finalPrice, // Price for the full route
         tripDate: todayStr, status: "Scheduled" as TripStatus,
       };
     };
@@ -154,33 +159,53 @@ export default function SeatSelectionPage() {
       const tripDetails = await getTripDetails(tripIdParam);
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination);
+        setSelectedDropOff(tripDetails.destination); // Default to trip's final destination
       }
       setLoading(false);
     }
     loadTrip();
   }, [tripIdParam]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (!trip || !selectedDropOff) {
       setDynamicRegularFarePerSeat(0);
       return;
     }
 
-    const { busType, price: fullRoutePrice, destination: tripFinalDestination } = trip;
-    const fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
+    const { busType, price: fullRoutePrice, destination: tripFinalDestination, origin } = trip;
+    let fareFromMatrix: number | undefined;
+
+    // Determine which matrix to use or how to look up based on origin
+    if (origin === "Mantalongon") {
+      fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
+    } else if (origin === "Cebu City") {
+      // For Cebu originating trips, the FARE_MATRIX keys are destinations from Mantalongon
+      // So if selectedDropOff is "Mantalongon", we use that.
+      // If it's an intermediate stop like "Dalaguete", we need to know the fare from Cebu to Dalaguete
+      // For now, we assume the matrix is symmetric or defined for Mantalongon as the reference.
+      // If the stop is in the matrix keys (like "Dalaguete", "Argao", etc.) it implies a Mantalongon-origin fare.
+      // This needs refinement if Cebu->X fares are different from Mantalongon->X
+      if (selectedDropOff === "Mantalongon") {
+         fareFromMatrix = FARE_MATRIX["Mantalongon"]?.[busType]; // Full route Cebu -> Mantalongon
+      } else {
+         // This part needs a clear definition of fares from Cebu to intermediate stops if they are not symmetric
+         // or not covered by the current FARE_MATRIX structure for Mantalongon-origin trips.
+         // For now, let's try to find it as if the stop was a destination from Mantalongon.
+         fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
+         if (!fareFromMatrix) {
+             console.warn(`Fare from Cebu City to "${selectedDropOff}" with ${busType} not explicitly in matrix. Using full route price as fallback.`);
+             fareFromMatrix = fullRoutePrice; // Fallback for unlisted intermediate stops from Cebu
+         }
+      }
+    }
+
 
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
-      //This case implies the selected drop-off is the trip's final destination,
-      //e.g., Mantalongon to Cebu, selectedDropOff is "Cebu City".
-      //Or Cebu to Mantalongon, selectedDropOff is "Mantalongon"
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
-      // Fallback if a specific stop isn't in the matrix for a given bus type,
-      // though it should be. Default to full route price as a safety.
-      console.warn(`Fare not found in FARE_MATRIX for destination: "${selectedDropOff}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
+      console.warn(`Fare not found for destination: "${selectedDropOff}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
       setDynamicRegularFarePerSeat(fullRoutePrice);
     }
   }, [trip, selectedDropOff]);
@@ -222,7 +247,7 @@ export default function SeatSelectionPage() {
     if (!trip) return;
 
     let isUserLoggedIn = false;
-    let passengerName = "Guest User";
+    let passengerName = "Guest User"; // Default passenger name
 
     if (typeof window !== 'undefined') {
         const loggedInUser = localStorage.getItem('busqLoggedInUser');
@@ -230,9 +255,10 @@ export default function SeatSelectionPage() {
             isUserLoggedIn = true;
             try {
                 const userData = JSON.parse(loggedInUser);
-                passengerName = userData.name || "Registered User";
+                passengerName = userData.name || "Registered User"; // Use stored name
             } catch (e) {
                 console.error("Error parsing logged in user data", e);
+                // Keep passengerName as "Registered User" or a default if parsing fails
             }
         }
     }
@@ -243,28 +269,27 @@ export default function SeatSelectionPage() {
       return;
     }
 
-    // If logged in, proceed to prepare for payment page
     const reservationDataForPayment: Reservation = {
-      id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, // More unique mock ID
+      id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       passengerName: passengerName,
       tripId: trip.id,
-      seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers
+      seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers for now
       busType: trip.busType,
       departureTime: trip.departureTime,
       origin: trip.origin,
       selectedDestination: selectedDropOff,
       tripDate: trip.tripDate,
       userType: passengerType,
-      regularFareTotal: regularFareTotalForBooking,
+      regularFareTotal: regularFareTotalForBooking, 
       discountApplied: discountApplied,
-      amountDue: amountDueForBooking,
-      // paymentType and amountPaid will be set on the payment page
-      finalFarePaid: 0, // Initialized to 0, will be updated after payment
+      amountDue: amountDueForBooking, 
+      // paymentType, amountPaid, and finalFarePaid will be set on payment page
+      finalFarePaid: 0, // Initialize, will be updated after payment
     };
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('pendingReservation', JSON.stringify(reservationDataForPayment));
-      window.location.href = '/payment'; // Use window.location to ensure full page load for localStorage access
+      window.location.href = '/payment'; // Use window.location for full page reload to ensure localStorage access
     }
   };
 
@@ -408,6 +433,7 @@ export default function SeatSelectionPage() {
                 </div>
             </CardContent>
           </Card>
+          
           <div className="space-y-2">
             <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
