@@ -150,7 +150,7 @@ export function Navbar() {
           <Link href="/" passHref>
             <div className="flex items-center space-x-2 cursor-pointer">
               <Ticket className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-primary-foreground">Bus<span className="text-primary">Q</span></span>
+              <span className="text-2xl font-bold text-foreground">Bus<span className="text-primary">Q</span></span>
             </div>
           </Link>
 
@@ -186,12 +186,12 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] bg-card p-0 pt-6 flex flex-col">
-                <SheetTitle><span className="sr-only">Main menu</span></SheetTitle> 
+                <SheetTitle className="sr-only">Main menu</SheetTitle> 
                 <div className="px-4 mb-6">
                    <Link href="/" passHref onClick={closeMobileMenu}>
                     <div className="flex items-center space-x-2 cursor-pointer">
                       <Ticket className="h-8 w-8 text-primary" />
-                      <span className="text-2xl font-bold text-primary-foreground">Bus<span className="text-primary">Q</span></span>
+                      <span className="text-2xl font-bold text-foreground">Bus<span className="text-primary">Q</span></span>
                     </div>
                   </Link>
                 </div>
