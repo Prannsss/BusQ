@@ -1,6 +1,6 @@
 
 import { ReceiptDetails } from "@/components/reservations/receipt-details";
-import { Reservation } from "@/types";
+import { Reservation, PassengerType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Download, Info, Printer } from "lucide-react";
 import Link from "next/link";
@@ -10,17 +10,26 @@ import { format } from "date-fns";
 async function getReservationDetails(reservationId: string): Promise<Reservation | null> {
   // In a real app, this would fetch from a database
   if (reservationId === "mock-reservation-123") {
+    const regularFare = 250;
+    const userType: PassengerType = "Student"; // Example
+    const discountApplied = userType === "Student" || userType === "Senior" || userType === "PWD";
+    const discountRate = 0.20;
+    const finalFarePaid = discountApplied ? regularFare * (1 - discountRate) : regularFare;
+
     return {
       id: "mock-reservation-123",
       passengerName: "Juan Dela Cruz",
-      tripId: "trip-5", // Example trip ID, ensure it might exist in seat page mock
+      tripId: "trip-5", 
       seatNumbers: ["A1", "A2"],
       busType: "Airconditioned",
-      departureTime: "08:00 AM", // This is illustrative, actual time from trip
-      totalAmount: 500,
+      departureTime: "08:00 AM", 
       origin: "Mantalongon",
       selectedDestination: "Cebu City",
       tripDate: format(new Date(), "yyyy-MM-dd"),
+      userType: userType,
+      regularFare: regularFare * 2, // Assuming 2 seats selected for mock
+      discountApplied: discountApplied,
+      finalFarePaid: finalFarePaid * 2, // Assuming 2 seats selected for mock
     };
   }
   return null;

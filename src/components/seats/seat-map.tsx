@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -7,41 +8,39 @@ import { Armchair } from 'lucide-react';
 
 interface SeatMapProps {
   busType: BusType;
-  // initialSeatLayout?: SeatLayout; // Could be passed if pre-fetching layout
+  onSeatSelectionChange?: (count: number) => void; // Callback to update parent
 }
 
 const generateSeatLayout = (busType: BusType): SeatLayout => {
   const layout: SeatLayout = { mainSeatRows: [], rearBenchRow: [] };
-  const ROWNUMS = Array.from({ length: 12 }, (_, i) => i + 1); // Rows 1 to 12
+  const ROWNUMS = Array.from({ length: 12 }, (_, i) => i + 1); 
   const REAR_BENCH_SEAT_COUNT = 5;
+  let seatCounter = 0; // To make reserved seats deterministic
 
-  if (busType === 'Traditional') {
-    // 4 columns of seats (A, B, C, D) for 12 rows. Aisle after B. (2-aisle-2)
-    // (4 seats * 12 rows) = 48 main seats
-    // 5 rear bench seats
-    // Total = 53
+  if (busType === 'Traditional') { // 2-aisle-2
     const COLS = ['A', 'B', 'C', 'D'];
-    const AISLE_AFTER_COL_LETTER = 'B';
+    const AISLE_AFTER_COL_INDEX = 1; // After 'B'
 
     ROWNUMS.forEach(rowNum => {
       const rowArray: (Seat | null)[] = [];
-      COLS.forEach(colLetter => {
-        // Mock some reserved seats
-        const isReserved = Math.random() < 0.2; // This Math.random is okay for initial UI, reservation status would come from backend
+      COLS.forEach((colLetter, colIndex) => {
+        seatCounter++;
+        const isReserved = seatCounter % 7 === 0 || seatCounter % 11 === 0 ; // Deterministic reserved seats
         rowArray.push({
           id: `${colLetter}${rowNum}`,
           label: `${colLetter}${rowNum}`,
           status: isReserved ? 'reserved' : 'available',
         });
-        if (colLetter === AISLE_AFTER_COL_LETTER) {
-          rowArray.push(null); // Aisle
+        if (colIndex === AISLE_AFTER_COL_INDEX) {
+          rowArray.push(null); 
         }
       });
       layout.mainSeatRows.push(rowArray);
     });
 
     for (let i = 1; i <= REAR_BENCH_SEAT_COUNT; i++) {
-      const isReserved = Math.random() < 0.1; // Okay for UI mock
+      seatCounter++;
+      const isReserved = seatCounter % 8 === 0; // Deterministic
       layout.rearBenchRow.push({
         id: `R${i}`,
         label: `R${i}`,
@@ -49,32 +48,30 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
       });
     }
 
-  } else if (busType === 'Airconditioned') {
-    // 5 columns of seats (A, B, C, D, E) for 12 rows. Aisle after B. (2-aisle-3)
-    // (5 seats * 12 rows) = 60 main seats
-    // 5 rear bench seats
-    // Total = 65
+  } else if (busType === 'Airconditioned') { // 2-aisle-3
     const COLS = ['A', 'B', 'C', 'D', 'E'];
-    const AISLE_AFTER_COL_LETTER = 'B';
+    const AISLE_AFTER_COL_INDEX = 1; // After 'B'
 
     ROWNUMS.forEach(rowNum => {
       const rowArray: (Seat | null)[] = [];
-      COLS.forEach(colLetter => {
-        const isReserved = Math.random() < 0.2; // Okay for UI mock
+      COLS.forEach((colLetter, colIndex) => {
+        seatCounter++;
+        const isReserved = seatCounter % 6 === 0 || seatCounter % 13 === 0; // Deterministic
         rowArray.push({
           id: `${colLetter}${rowNum}`,
           label: `${colLetter}${rowNum}`,
           status: isReserved ? 'reserved' : 'available',
         });
-        if (colLetter === AISLE_AFTER_COL_LETTER) {
-          rowArray.push(null); // Aisle
+        if (colIndex === AISLE_AFTER_COL_INDEX) {
+          rowArray.push(null); 
         }
       });
       layout.mainSeatRows.push(rowArray);
     });
     
     for (let i = 1; i <= REAR_BENCH_SEAT_COUNT; i++) {
-      const isReserved = Math.random() < 0.1; // Okay for UI mock
+      seatCounter++;
+      const isReserved = seatCounter % 9 === 0; // Deterministic
       layout.rearBenchRow.push({
         id: `R${i}`,
         label: `R${i}`,
@@ -86,14 +83,20 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
 };
 
 
-export function SeatMap({ busType }: SeatMapProps) {
+export function SeatMap({ busType, onSeatSelectionChange }: SeatMapProps) {
   const [seatLayout, setSeatLayout] = useState<SeatLayout | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
   useEffect(() => {
     setSeatLayout(generateSeatLayout(busType));
-    setSelectedSeats([]); // Reset selected seats when bus type or layout changes
+    setSelectedSeats([]); 
   }, [busType]);
+
+  useEffect(() => {
+    if (onSeatSelectionChange) {
+      onSeatSelectionChange(selectedSeats.length);
+    }
+  }, [selectedSeats, onSeatSelectionChange]);
 
 
   const handleSeatClick = (seatId: string, status: SeatStatus) => {
@@ -121,7 +124,8 @@ export function SeatMap({ busType }: SeatMapProps) {
     );
   };
   
-  const gridColsClass = busType === 'Airconditioned' ? 'grid-cols-6' : 'grid-cols-5';
+  const gridColsClass = busType === 'Airconditioned' ? 'grid-cols-[repeat(6,minmax(0,1fr))]' : 'grid-cols-[repeat(5,minmax(0,1fr))]';
+
 
   return (
     <div className="p-4 bg-card-foreground/5 rounded-lg shadow">
@@ -151,7 +155,7 @@ export function SeatMap({ busType }: SeatMapProps) {
                   <span className="text-xs font-medium">{seat.label}</span>
                 </div>
               ) : (
-                <div key={`aisle-${rowIndex}-${seatIndex}`} className="w-10 h-10" /> // Aisle spacer
+                <div key={`aisle-${rowIndex}-${seatIndex}`} className="w-10 h-10" aria-hidden="true" /> 
               )
             ))}
           </React.Fragment>
@@ -184,6 +188,7 @@ export function SeatMap({ busType }: SeatMapProps) {
       
       <div className="mt-6 text-center">
         <p className="text-muted-foreground">Selected Seats: {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}</p>
+        <p className="text-muted-foreground">Number of Seats: <span id="selected-seats-count-display">{selectedSeats.length}</span></p>
       </div>
     </div>
   );

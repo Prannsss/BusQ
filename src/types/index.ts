@@ -49,7 +49,7 @@ export interface Trip {
   busType: BusType;
   availableSeats: number;
   totalSeats: number;
-  price: number; // Price for the full route to final destination
+  price: number; // Price for the full route to final destination - this will be treated as regularFare
   tripDate: string;
   status: TripStatus;
   busPlateNumber?: string;
@@ -69,6 +69,9 @@ export interface SeatLayout {
   rearBenchRow: (Seat | null)[];
 }
 
+export const passengerTypes = ["Regular", "Student", "Senior", "PWD"] as const;
+export type PassengerType = typeof passengerTypes[number];
+
 export interface Reservation {
   id: string;
   passengerName: string;
@@ -76,14 +79,18 @@ export interface Reservation {
   seatNumbers: string[];
   busType: BusType;
   departureTime: string;
-  totalAmount: number;
-  origin?: string; // Added for clarity on receipt
-  selectedDestination: string; // User's actual chosen drop-off point
-  tripDate?: string; // Added for clarity on receipt
+  origin?: string; 
+  selectedDestination: string; 
+  tripDate?: string; 
+  userType: PassengerType;
+  regularFare: number;
+  discountApplied: boolean;
+  finalFarePaid: number; // Renamed from totalAmount for clarity
 }
 
 export interface User {
   id: string;
   email: string;
   name?: string;
+  userType?: PassengerType; // Added userType to User model
 }

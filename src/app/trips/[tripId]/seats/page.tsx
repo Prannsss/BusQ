@@ -2,7 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { SeatMap } from "@/components/seats/seat-map";
-import { Trip, BusType, TripStatus, TripDirection, mantalongonRouteStops, cebuRouteStops } from "@/types";
+import { Trip, BusType, TripStatus, TripDirection, mantalongonRouteStops, cebuRouteStops, PassengerType, passengerTypes } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,9 +14,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Armchair, Ticket, Calendar, Clock, Info, Route, Tag, MapPin } from "lucide-react";
+import { Armchair, Ticket, Calendar, Clock, Info, Route, Tag, MapPin, UserCircle, UploadCloud, Percent } from "lucide-react";
 import Link from "next/link";
 import { format, addMinutes } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Fixed Schedule Configuration (copied for consistency, ideally from a shared source)
 const FIXED_SCHEDULE_A_TO_B_SEATS: Array<{ time: string; busType: BusType }> = [
@@ -46,7 +47,7 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       busType: BusType,
       direction: TripDirection,
       origin: string,
-      finalDestination: string, // This is the bus route's final destination
+      finalDestination: string, 
       currentTripId: number
     ): Trip => {
       const [hours, minutes] = departureTimeStr.split(':').map(Number);
@@ -55,19 +56,17 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
+      
+      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 10)) : (30 + (currentTripId % 10));
+      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable ));
 
-      // Deterministic seat availability based on tripIdCounter to avoid hydration issues
-      const baseAvailable = busType === "Airconditioned" ? 40 : 30;
-      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable + (currentTripId % 15) - 5));
-
-      // Deterministic price based on tripIdCounter to avoid hydration issues
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 17 % 31) - 15;
+      const priceVariation = (currentTripId * 17 % 31) - 15; 
       const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
 
       return {
         id: `trip-${currentTripId}`, busId: `bus-${currentTripId % 5}`, direction, origin,
-        destination: finalDestination, // Route's final destination
+        destination: finalDestination, 
         departureTime: departureTimeStr, arrivalTime: format(arrivalDateTime, "HH:mm"),
         travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
         busType: busType,
@@ -78,16 +77,14 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       };
     };
 
-    // Generate trips from Mantalongon to Cebu City (final destination)
     FIXED_SCHEDULE_A_TO_B_SEATS.forEach(item => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
     });
 
-    // Generate trips from Cebu City to Mantalongon (final destination)
     FIXED_SCHEDULE_B_TO_A_SEATS.forEach(item => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
     });
-
+    
     allTrips.sort((a, b) => {
         const timeComp = a.departureTime.localeCompare(b.departureTime);
         if (timeComp !== 0) return timeComp;
@@ -100,35 +97,45 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
 const ALL_MOCK_TRIPS_SEATS = generateMockTripsForSeatsPage();
 
-// This needs to be a client component hook to use params
 async function getTripDetails(tripId: string): Promise<Trip | null> {
-  // In a real app, this would be an API call.
-  // For now, we find it in the generated mock trips.
   return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripId) || null;
 }
 
 
 export default function SeatSelectionPage({ params }: { params: { tripId: string } }) {
-  const { tripId } = params; // Destructure tripId from params
+  const { tripId } = params; 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
+  const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
   const [loading, setLoading] = useState(true);
+  const [selectedSeatsCount, setSelectedSeatsCount] = useState(0); // This would be updated by SeatMap component
 
   useEffect(() => {
     async function loadTrip() {
       setLoading(true);
-      const tripDetails = await getTripDetails(tripId); // Use the destructured tripId
+      const tripDetails = await getTripDetails(tripId); 
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination); // Default to final destination
+        setSelectedDropOff(tripDetails.destination); 
       }
       setLoading(false);
     }
     loadTrip();
-  }, [tripId]); // Use the destructured tripId in the dependency array
+  }, [tripId]); 
+
+  const regularFare = trip ? trip.price : 0;
+  const isDiscountableType = passengerType === "Student" || passengerType === "Senior" || passengerType === "PWD";
+  const discountApplied = isDiscountableType;
+  const discountRate = 0.20; // 20% discount
+  
+  const calculatedFarePerSeat = discountApplied 
+    ? regularFare * (1 - discountRate) 
+    : regularFare;
+  
+  const totalPrice = calculatedFarePerSeat * selectedSeatsCount;
 
   if (loading) {
-    return <div className="text-center py-10">Loading trip details...</div>;
+    return <div className="text-center py-10 text-muted-foreground">Loading trip details...</div>;
   }
 
   if (!trip) {
@@ -144,17 +151,35 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
     );
   }
 
-  const selectedSeatsCount = 0; // This should be derived from SeatMap interactions
-  const totalPrice = trip.price * selectedSeatsCount; // Price might vary by drop-off in a real app
   const isBookable = trip.status === "Scheduled" || trip.status === "On Standby";
-
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
+
+  const handleConfirmReservation = () => {
+    // In a real app, this would interact with a backend.
+    // Here, we simulate the fare calculation result in the alert.
+    const fareDetails = {
+        regularFare: regularFare,
+        discountApplied: discountApplied,
+        finalFarePaid: totalPrice,
+        passengerType: passengerType,
+    };
+    alert(
+      `Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff}.\n` +
+      `Passenger Type: ${fareDetails.passengerType}\n` +
+      `Regular Fare/Seat: PHP ${fareDetails.regularFare.toFixed(2)}\n` +
+      (fareDetails.discountApplied ? `Discount (20%): -PHP ${(fareDetails.regularFare * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
+      `Final Price/Seat: PHP ${calculatedFarePerSeat.toFixed(2)}\n`+
+      `Total Price: PHP ${fareDetails.finalFarePaid.toFixed(2)}\n` +
+      `(Functionality not yet implemented).`
+    );
+  };
+
 
   return (
     <div className="container mx-auto py-8">
       <header className="text-center mb-8">
         <Ticket className="mx-auto h-12 w-12 text-primary mb-4" />
-        <h1 className="text-4xl font-bold text-primary-foreground">Select Your Seats & Drop-off</h1>
+        <h1 className="text-4xl font-bold text-primary-foreground">Select Seats, Drop-off & Passenger Type</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Bus Route: {trip.origin} to {trip.destination}.
         </p>
@@ -168,10 +193,11 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
           <Card className="shadow-xl">
             <CardHeader>
               <CardTitle className="text-2xl text-primary">Bus Layout ({trip.busType})</CardTitle>
-              <CardDescription>Click on available seats to select them. Total seats: {trip.totalSeats}</CardDescription>
+              <CardDescription>Click on available seats to select them. Total seats: {trip.totalSeats}. Seats available: {trip.availableSeats}</CardDescription>
             </CardHeader>
             <CardContent>
-              <SeatMap busType={trip.busType} />
+              {/* Pass a callback to update selectedSeatsCount from SeatMap */}
+              <SeatMap busType={trip.busType} onSeatSelectionChange={setSelectedSeatsCount} />
             </CardContent>
           </Card>
 
@@ -200,12 +226,43 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
                 </div>
             </CardContent>
           </Card>
+
+           <Card className="shadow-xl">
+            <CardHeader>
+                <CardTitle className="text-xl text-primary flex items-center">
+                    <UserCircle className="h-5 w-5 mr-2" /> Select Passenger Type
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label htmlFor="passenger-type-select" className="text-muted-foreground">Passenger Type:</Label>
+                    <Select value={passengerType} onValueChange={(value) => setPassengerType(value as PassengerType)}>
+                        <SelectTrigger id="passenger-type-select" className="w-full bg-input border-border focus:ring-primary">
+                            <SelectValue placeholder="Select passenger type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-popover">
+                            {passengerTypes.map(type => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     {isDiscountableType && (
+                        <Alert variant="default" className="mt-3 border-primary/50 bg-primary/10">
+                           <UploadCloud className="h-4 w-4 text-primary" />
+                           <AlertDescription className="text-primary/90">
+                            Discounted fare selected. ID verification will be required at the terminal or upon boarding. (This is a placeholder for ID upload functionality).
+                           </AlertDescription>
+                        </Alert>
+                    )}
+                </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="md:col-span-1 space-y-6">
           <Card className="shadow-xl">
             <CardHeader>
-              <CardTitle className="text-xl text-primary">Trip Summary</CardTitle>
+              <CardTitle className="text-xl text-primary">Trip & Fare Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
@@ -215,6 +272,10 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2" /> Your Drop-off:</span>
                 <span className="font-semibold">{selectedDropOff || 'Select a drop-off'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><UserCircle className="h-4 w-4 mr-2" /> Passenger Type:</span>
+                <span className="font-semibold">{passengerType}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><Calendar className="h-4 w-4 mr-2" /> Date:</span>
@@ -236,9 +297,20 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
                 <span className="text-muted-foreground">Status:</span>
                 <span className="font-semibold">{trip.status}</span>
               </div>
+              <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Price/Seat:</span>
-                <span className="font-semibold">PHP {trip.price.toFixed(2)}</span>
+                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Regular Fare/Seat:</span>
+                <span className="font-semibold">PHP {regularFare.toFixed(2)}</span>
+              </div>
+                {discountApplied && (
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center"><Percent className="h-4 w-4 mr-2" /> Discount (20%):</span>
+                        <span className="font-semibold text-green-500">- PHP {(regularFare * discountRate).toFixed(2)}</span>
+                    </div>
+                )}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Final Fare/Seat:</span>
+                <span className="font-semibold">PHP {calculatedFarePerSeat.toFixed(2)}</span>
               </div>
               <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">
@@ -254,7 +326,7 @@ export default function SeatSelectionPage({ params }: { params: { tripId: string
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
             disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0}
-            onClick={() => alert(`Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff} (Functionality not yet implemented).`)}
+            onClick={handleConfirmReservation}
           >
             {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
           </Button>
