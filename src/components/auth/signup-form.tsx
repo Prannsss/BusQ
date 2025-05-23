@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Mail, Lock, User } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 const signupFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -30,6 +32,7 @@ type SignupFormValues = z.infer<typeof signupFormSchema>;
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter(); // Initialize router
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
@@ -46,9 +49,21 @@ export function SignupForm() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     console.log("Signup submitted:", values);
+
+    // Store user data in localStorage (FOR MOCK PURPOSES ONLY)
+    // In a real app, NEVER store plaintext passwords.
+    const userData = {
+      name: values.name,
+      email: values.email,
+      password: values.password, // Storing password for mock login
+    };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('busqUser', JSON.stringify(userData));
+    }
+
     setIsLoading(false);
-    // TODO: Implement actual signup logic
-    alert("Signup functionality not yet implemented. Check console for values.");
+    alert("Signup successful! Your details have been (mock) registered locally. Please proceed to login.");
+    router.push('/login'); // Redirect to login page
   }
 
   return (
@@ -63,9 +78,9 @@ export function SignupForm() {
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <FormControl>
-                  <Input 
-                    placeholder="Your Name" 
-                    {...field} 
+                  <Input
+                    placeholder="Your Name"
+                    {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />
                 </FormControl>
@@ -83,10 +98,10 @@ export function SignupForm() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="you@example.com" 
-                    {...field} 
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />
                 </FormControl>
@@ -104,10 +119,10 @@ export function SignupForm() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <FormControl>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    {...field} 
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />
                 </FormControl>
@@ -125,10 +140,10 @@ export function SignupForm() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <FormControl>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    {...field} 
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />
                 </FormControl>

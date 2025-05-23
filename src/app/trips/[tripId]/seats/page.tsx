@@ -1,9 +1,9 @@
 
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // Import useRouter
+import { useParams, useRouter } from 'next/navigation';
 import { SeatMap } from "@/components/seats/seat-map";
-import { Trip, BusType, TripStatus, TripDirection, mantalongonRouteStops, cebuRouteStops, PassengerType, passengerTypes } from "@/types";
+import type { Trip, BusType, TripStatus, TripDirection, MantalongonRouteStop, CebuRouteStop, PassengerType, passengerTypes, Reservation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -43,6 +43,7 @@ const FARE_MATRIX: {
     [key in BusType]?: number;
   };
 } = {
+  // Fares from Mantalongon
   "Dalaguete": { "Traditional": 60, "Airconditioned": 70 },
   "Argao": { "Traditional": 75, "Airconditioned": 90 },
   "Sibonga": { "Traditional": 90, "Airconditioned": 110 },
@@ -52,8 +53,18 @@ const FARE_MATRIX: {
   "Minglanilla": { "Traditional": 150, "Airconditioned": 175 },
   "Talisay City": { "Traditional": 165, "Airconditioned": 190 },
   "Cebu City": { "Traditional": 180, "Airconditioned": 200 },
-  "Mantalongon": { "Traditional": 180, "Airconditioned": 200 } 
+  // Fares from Cebu City (reverse direction might have slightly different matrix or could be symmetric)
+  // For now, assuming symmetric for simplicity if not specified, but Cebu to Mantalongon is the full route.
+  "Mantalongon": { "Traditional": 180, "Airconditioned": 200 }
 };
+
+
+const mantalongonRouteStops: MantalongonRouteStop[] = [
+  "Dalaguete", "Argao", "Sibonga", "Carcar City", "San Fernando", "Naga City", "Minglanilla", "Talisay City", "Cebu City",
+];
+const cebuRouteStops: CebuRouteStop[] = [
+  "Talisay City", "Minglanilla", "Naga City", "San Fernando", "Carcar City", "Sibonga", "Argao", "Dalaguete", "Mantalongon",
+];
 
 
 const generateMockTripsForSeatsPage = (): Trip[] => {
@@ -75,11 +86,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-      
+
       const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-      const finalPrice = busType === "Airconditioned" ? 200 : 180;
+      const finalPrice = busType === "Airconditioned" ? 200 : 180; // Fixed price based on bus type
 
 
       return {
@@ -122,14 +133,14 @@ async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
 
 export default function SeatSelectionPage() {
   const params = useParams<{ tripId: string }>();
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
   const tripIdParam = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
   const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
   const [loading, setLoading] = useState(true);
-  const [selectedSeatsCount, setSelectedSeatsCount] = useState(0); 
+  const [selectedSeatsCount, setSelectedSeatsCount] = useState(0);
   const [dynamicRegularFarePerSeat, setDynamicRegularFarePerSeat] = useState<number>(0);
 
   useEffect(() => {
@@ -143,12 +154,12 @@ export default function SeatSelectionPage() {
       const tripDetails = await getTripDetails(tripIdParam);
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination); 
+        setSelectedDropOff(tripDetails.destination);
       }
       setLoading(false);
     }
     loadTrip();
-  }, [tripIdParam]); 
+  }, [tripIdParam]);
 
   useEffect(() => {
     if (!trip || !selectedDropOff) {
@@ -157,14 +168,18 @@ export default function SeatSelectionPage() {
     }
 
     const { busType, price: fullRoutePrice, destination: tripFinalDestination } = trip;
-
     const fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
 
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
+      //This case implies the selected drop-off is the trip's final destination,
+      //e.g., Mantalongon to Cebu, selectedDropOff is "Cebu City".
+      //Or Cebu to Mantalongon, selectedDropOff is "Mantalongon"
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
+      // Fallback if a specific stop isn't in the matrix for a given bus type,
+      // though it should be. Default to full route price as a safety.
       console.warn(`Fare not found in FARE_MATRIX for destination: "${selectedDropOff}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
       setDynamicRegularFarePerSeat(fullRoutePrice);
     }
@@ -173,7 +188,7 @@ export default function SeatSelectionPage() {
 
   const isDiscountableType = passengerType === "Student" || passengerType === "Senior" || passengerType === "PWD";
   const discountApplied = isDiscountableType;
-  const discountRate = 0.20; 
+  const discountRate = 0.20;
 
   const calculatedFarePerSeat = discountApplied
     ? dynamicRegularFarePerSeat * (1 - discountRate)
@@ -204,20 +219,34 @@ export default function SeatSelectionPage() {
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
-    // MOCK: Simulate user login status
-    const isUserLoggedIn = false; // Change to true to test the payment flow
+    if (!trip) return;
+
+    let isUserLoggedIn = false;
+    let passengerName = "Guest User";
+
+    if (typeof window !== 'undefined') {
+        const loggedInUser = localStorage.getItem('busqLoggedInUser');
+        if (loggedInUser) {
+            isUserLoggedIn = true;
+            try {
+                const userData = JSON.parse(loggedInUser);
+                passengerName = userData.name || "Registered User";
+            } catch (e) {
+                console.error("Error parsing logged in user data", e);
+            }
+        }
+    }
+
 
     if (!isUserLoggedIn) {
-      router.push('/login'); // Redirect to login page
+      router.push('/login');
       return;
     }
-    
-    // If logged in, proceed to prepare for payment page
-    if (!trip) return; // Should not happen if button is enabled
 
-    const reservationDataForPayment = {
-      id: "mock-reservation-123", // Keep consistent for receipt page for now
-      passengerName: "Juan Dela Cruz", // Mock passenger name
+    // If logged in, proceed to prepare for payment page
+    const reservationDataForPayment: Reservation = {
+      id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, // More unique mock ID
+      passengerName: passengerName,
       tripId: trip.id,
       seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers
       busType: trip.busType,
@@ -229,9 +258,8 @@ export default function SeatSelectionPage() {
       regularFareTotal: regularFareTotalForBooking,
       discountApplied: discountApplied,
       amountDue: amountDueForBooking,
-      paymentType: undefined, // Will be set on payment page
-      amountPaid: undefined, // Will be set on payment page
-      finalFarePaid: 0, // Placeholder, will be updated after payment
+      // paymentType and amountPaid will be set on the payment page
+      finalFarePaid: 0, // Initialized to 0, will be updated after payment
     };
 
     if (typeof window !== 'undefined') {
@@ -323,7 +351,7 @@ export default function SeatSelectionPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="shadow-xl">
             <CardHeader>
                 <CardTitle className="text-xl text-primary flex items-center">
@@ -399,5 +427,3 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
-
-
