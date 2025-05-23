@@ -38,6 +38,24 @@ const FIXED_SCHEDULE_B_TO_A_SEATS: Array<{ time: string; busType: BusType }> = [
 const TRAVEL_DURATION_MINS_SEATS = 240;
 const STOPOVER_DURATION_MINS_SEATS = 60;
 
+const FARE_MATRIX: {
+  [destination: string]: {
+    [key in BusType]?: number;
+  };
+} = {
+  "Dalaguete": { "Traditional": 60, "Airconditioned": 70 },
+  "Argao": { "Traditional": 75, "Airconditioned": 90 },
+  "Sibonga": { "Traditional": 90, "Airconditioned": 110 },
+  "Carcar City": { "Traditional": 105, "Airconditioned": 130 },
+  "San Fernando": { "Traditional": 120, "Airconditioned": 145 },
+  "Naga City": { "Traditional": 135, "Airconditioned": 160 },
+  "Minglanilla": { "Traditional": 150, "Airconditioned": 175 },
+  "Talisay City": { "Traditional": 165, "Airconditioned": 190 },
+  "Cebu City": { "Traditional": 180, "Airconditioned": 200 },
+  "Mantalongon": { "Traditional": 180, "Airconditioned": 200 } 
+};
+
+
 const generateMockTripsForSeatsPage = (): Trip[] => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const allTrips: Trip[] = [];
@@ -124,7 +142,7 @@ export default function SeatSelectionPage() {
       const tripDetails = await getTripDetails(tripIdParam);
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination); // Initially set to final destination
+        setSelectedDropOff(tripDetails.destination); 
       }
       setLoading(false);
     }
@@ -137,35 +155,21 @@ export default function SeatSelectionPage() {
       return;
     }
 
-    const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
-    const selectedStopIndex = currentRouteStops.indexOf(selectedDropOff as any); // Cast as any to satisfy indexOf
-    const totalStopsOnRoute = currentRouteStops.length;
+    const { busType, price: fullRoutePrice, destination: tripFinalDestination } = trip;
 
-    if (selectedStopIndex === -1 || totalStopsOnRoute === 0) {
-      setDynamicRegularFarePerSeat(trip.price); // Fallback to full price
-      return;
+    const fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
+
+    if (fareFromMatrix !== undefined) {
+      setDynamicRegularFarePerSeat(fareFromMatrix);
+    } else if (selectedDropOff === tripFinalDestination) {
+      // If the selected drop-off is the trip's actual final destination, use the trip's full price.
+      // This should ideally also be covered by the matrix for clarity.
+      setDynamicRegularFarePerSeat(fullRoutePrice);
+    } else {
+      // Fallback if a stop isn't in the matrix or for any other unhandled case.
+      console.warn(`Fare not found in FARE_MATRIX for destination: "${selectedDropOff}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
+      setDynamicRegularFarePerSeat(fullRoutePrice);
     }
-    
-    // If selected drop-off is the final destination of the trip
-    if (selectedDropOff === trip.destination) {
-      setDynamicRegularFarePerSeat(trip.price);
-      return;
-    }
-
-    // Simple linear scaling: (index + 1) / totalStops * fullRoutePrice
-    // Ensure minimum fare, e.g., 30% of full price if it's one of the first stops
-    const minFareRatio = 0.3; // Minimum fare is 30% of the full route price
-    const calculatedRatio = (selectedStopIndex + 1) / totalStopsOnRoute;
-    
-    // Ensure ratio doesn't exceed 1 (in case selectedDropOff is somehow beyond final destination in list)
-    // And ensure it's not less than minFareRatio for early stops
-    const fareRatio = Math.min(1, Math.max(minFareRatio, calculatedRatio));
-    
-    let calculatedFare = trip.price * fareRatio;
-    
-    // Round to 2 decimal places
-    setDynamicRegularFarePerSeat(parseFloat(calculatedFare.toFixed(2)));
-
   }, [trip, selectedDropOff]);
 
 
