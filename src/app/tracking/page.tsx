@@ -118,7 +118,7 @@ export default function TrackingPage() {
     <div className="space-y-8">
       <header className="text-center">
         <MapPin className="mx-auto h-12 w-12 text-primary mb-4" />
-        <h1 className="text-4xl font-bold text-primary-foreground">Real-Time Bus Tracking</h1>
+        <h1 className="text-4xl font-bold text-foreground">Real-Time Bus Tracking</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Follow your bus live. Select origin and departure time.
         </p>
@@ -184,3 +184,5 @@ export default function TrackingPage() {
 }
 
   
+
+    

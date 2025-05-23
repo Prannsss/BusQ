@@ -58,7 +58,7 @@ export function BusMap({ busId }: BusMapProps) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-card text-card-foreground p-6 rounded-lg shadow-lg">
         <Construction className="h-16 w-16 text-primary mb-5" />
-        <h2 className="text-2xl font-semibold text-primary-foreground mb-3">Under Development</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-3">Under Development</h2>
         <p className="text-center text-muted-foreground text-md max-w-sm">
           This feature is currently under development and will be coming soon.
         </p>
@@ -100,3 +100,6 @@ export function BusMap({ busId }: BusMapProps) {
     </APIProvider>
   );
 }
+
+
+    
