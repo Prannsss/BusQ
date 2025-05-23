@@ -87,16 +87,6 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
       const finalPrice = busType === "Airconditioned" ? 200 : 180;
 
-      let currentStatus: TripStatus;
-      const now = new Date();
-      if (now < departureDateTime) {
-        currentStatus = "Scheduled";
-      } else if (now >= departureDateTime && now < arrivalDateTime) {
-        currentStatus = "Travelling";
-      } else {
-        currentStatus = "Parked";
-      }
-
       return {
         id: `trip-${currentTripId}`, busId: `bus-${currentTripId % 5}`, direction, origin,
         destination: finalDestination,
@@ -106,7 +96,10 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         availableSeats: availableSeatsForType,
         totalSeats: totalSeatsForType,
         price: finalPrice, 
-        tripDate: todayStr, status: currentStatus,
+        tripDate: todayStr, 
+        // status will be derived client-side based on timestamps
+        departureTimestamp: departureDateTime.getTime(),
+        arrivalTimestamp: arrivalDateTime.getTime(),
       };
     };
 
@@ -132,9 +125,8 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 const ALL_MOCK_TRIPS_SEATS = generateMockTripsForSeatsPage();
 
 async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
-  // regenerate to ensure status is fresh if this function is called significantly after page load
-  const currentTrips = generateMockTripsForSeatsPage(); 
-  return currentTrips.find(trip => trip.id === tripIdToFind) || null;
+  // Find from the pre-generated list, do not regenerate with new Date()
+  return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripIdToFind) || null;
 }
 
 export default function SeatSelectionPage() {
@@ -148,6 +140,7 @@ export default function SeatSelectionPage() {
 
 
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [displayStatus, setDisplayStatus] = useState<TripStatus>("Scheduled"); // Default status
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
   const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
   const [loading, setLoading] = useState(true);
@@ -171,6 +164,22 @@ export default function SeatSelectionPage() {
     }
     loadTrip();
   }, [currentTripId]);
+
+  useEffect(() => {
+    if (trip?.departureTimestamp && trip?.arrivalTimestamp) {
+        const now = new Date().getTime();
+        let newStatus: TripStatus;
+        if (now < trip.departureTimestamp) newStatus = "Scheduled";
+        else if (now >= trip.departureTimestamp && now < trip.arrivalTimestamp) newStatus = "Travelling";
+        else newStatus = "Parked";
+        setDisplayStatus(newStatus);
+    } else if (trip?.status) { // Fallback to trip.status if timestamps are not available for some reason
+        setDisplayStatus(trip.status);
+    } else {
+        setDisplayStatus("Scheduled"); // Default if no trip or status info
+    }
+  }, [trip]);
+
 
  useEffect(() => {
     if (!trip || !selectedDropOff) {
@@ -228,7 +237,7 @@ export default function SeatSelectionPage() {
     );
   }
 
-  const isBookable = trip.status === "Scheduled"; // Simplified based on new dynamic status
+  const isBookable = displayStatus === "Scheduled" || displayStatus === "On Standby";
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
@@ -244,7 +253,8 @@ export default function SeatSelectionPage() {
             try {
                 const userData = JSON.parse(loggedInUser);
                 passengerName = userData.name || "Registered User"; 
-            } catch (e) {
+            } catch (e)
+{
                 console.error("Error parsing logged in user data", e);
             }
         }
@@ -270,6 +280,7 @@ export default function SeatSelectionPage() {
       regularFareTotal: regularFareTotalForBooking, 
       discountApplied: discountApplied,
       amountDue: amountDueForBooking, 
+      finalFarePaid: 0, // Will be updated on payment page
     };
 
     if (typeof window !== 'undefined') {
@@ -288,7 +299,7 @@ export default function SeatSelectionPage() {
           Bus Route: {trip.origin} to {trip.destination}.
         </p>
          {!isBookable && (
-            <p className="mt-2 text-yellow-500 font-semibold">This trip is currently {trip.status.toLowerCase()} and not available for booking.</p>
+            <p className="mt-2 text-yellow-500 font-semibold">This trip is currently {displayStatus.toLowerCase()} and not available for booking.</p>
         )}
       </header>
 
@@ -333,7 +344,7 @@ export default function SeatSelectionPage() {
               </div>
                <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status:</span>
-                <span className="font-semibold">{trip.status}</span>
+                <span className="font-semibold">{displayStatus}</span>
               </div>
               <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">

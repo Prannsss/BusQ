@@ -1,6 +1,6 @@
 
-import React from "react"; // Import React for React.memo
-import type { Trip } from "@/types";
+import React, { useState, useEffect } from "react"; // Import React for React.memo
+import type { Trip, TripStatus } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ interface TripCardProps {
   trip: Trip;
 }
 
-const getStatusBadgeVariant = (status: Trip["status"]): "default" | "secondary" | "destructive" | "outline" => {
+const getStatusBadgeVariant = (status?: TripStatus): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
     case "Scheduled":
       return "default"; 
@@ -27,35 +27,49 @@ const getStatusBadgeVariant = (status: Trip["status"]): "default" | "secondary" 
     case "Parked":
       return "secondary";
     default:
-      return "default";
+      return "default"; // Default for undefined or loading status
   }
 };
 
-// Updated status badge colors based on new requirements
-const getStatusBadgeColors = (status: Trip["status"]): string => {
+const getStatusBadgeColors = (status?: TripStatus): string => {
     switch (status) {
       case "Parked":
-        return "bg-slate-500 text-slate-50"; // BG: #64748B (Slate 500), Text: #F8FAFC (Slate 50)
+        return "bg-slate-500 text-slate-50"; 
       case "Scheduled":
       case "On Standby":
-        return "bg-amber-400 text-amber-950"; // BG: #FACC15 (Amber 400), Text: #451A03 (Amber 950)
+        return "bg-amber-400 text-amber-950"; 
       case "Travelling":
-        return "bg-emerald-500 text-emerald-50"; // BG: #10B981 (Emerald 500), Text: #ECFDF5 (Emerald 50)
+        return "bg-emerald-500 text-emerald-50"; 
       case "Completed":
-        return "bg-gray-500 text-gray-50"; // BG: #6B7280 (Gray 500), Text: #F9FAFB (Gray 50)
+        return "bg-gray-500 text-gray-50"; 
       case "Cancelled":
-        return "bg-red-600 text-red-50"; // BG: #DC2626 (Red 600), Text: #FEF2F2 (Red 50)
+        return "bg-red-600 text-red-50"; 
       default:
-        // Fallback, though all defined statuses should be covered.
-        return "bg-primary text-primary-foreground";
+        return "bg-primary text-primary-foreground"; // Fallback for undefined status
     }
 }
 
-// Wrap TripCard with React.memo
 const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
-  const { id, departureTime, arrivalTime, busType, availableSeats, totalSeats, price, origin, destination, status, tripDate } = trip;
+  const { id, departureTime, arrivalTime, busType, availableSeats, totalSeats, price, origin, destination, tripDate, departureTimestamp, arrivalTimestamp } = trip;
 
-  const isBookable = status === "Scheduled" || status === "On Standby";
+  const [currentTripStatus, setCurrentTripStatus] = useState<TripStatus>("Scheduled"); // Default server-rendered status
+
+  useEffect(() => {
+    if (departureTimestamp && arrivalTimestamp) {
+      const now = new Date().getTime();
+      let newStatus: TripStatus;
+      if (now < departureTimestamp) {
+        newStatus = "Scheduled";
+      } else if (now >= departureTimestamp && now < arrivalTimestamp) {
+        newStatus = "Travelling";
+      } else {
+        newStatus = "Parked";
+      }
+      setCurrentTripStatus(newStatus);
+    }
+  }, [departureTimestamp, arrivalTimestamp]);
+
+  const isBookable = currentTripStatus === "Scheduled" || currentTripStatus === "On Standby";
 
   return (
     <Card className="flex flex-col justify-between bg-card border-border shadow-lg hover:shadow-primary/30 transition-shadow duration-300 overflow-hidden">
@@ -72,8 +86,8 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
             <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-semibold ${busType === "Airconditioned" ? "bg-sky-500 text-sky-50" : "bg-rose-500 text-rose-50"}`}>
                 {busType}
             </div>
-             <Badge variant={getStatusBadgeVariant(status)} className={`absolute top-2 left-2 ${getStatusBadgeColors(status)}`}>
-                {status}
+             <Badge variant={getStatusBadgeVariant(currentTripStatus)} className={`absolute top-2 left-2 ${getStatusBadgeColors(currentTripStatus)}`}>
+                {currentTripStatus}
             </Badge>
         </div>
         <CardTitle className="text-foreground">{origin} <Route className="inline h-5 w-5 mx-1 text-muted-foreground" /> {destination}</CardTitle>
@@ -104,7 +118,7 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
           </Link>
         ) : (
           <Button className="w-full" variant="outline" disabled>
-            <Info className="mr-2 h-4 w-4" /> Not Bookable
+            <Info className="mr-2 h-4 w-4" /> Not Bookable ({currentTripStatus})
           </Button>
         )}
       </CardFooter>

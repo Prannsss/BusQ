@@ -59,15 +59,9 @@ const generateTodaysTripsForTracking = (): Trip[] => {
     const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_TRACKING);
     const totalSeats = busType === "Airconditioned" ? 65 : 53;
 
-    let currentStatus: TripStatus;
-    const now = new Date();
-    if (now < departureDateTime) {
-      currentStatus = "Scheduled";
-    } else if (now >= departureDateTime && now < arrivalDateTime) {
-      currentStatus = "Travelling";
-    } else {
-      currentStatus = "Parked";
-    }
+    // Status will be derived client-side if needed for display, 
+    // but for filtering here, we might pre-calculate or assume "Scheduled"
+    // For this page, the primary use is selecting a trip, so initial status isn't critical for display.
 
     return {
       id: `track-trip-${tripIdCounter++}`,
@@ -84,8 +78,10 @@ const generateTodaysTripsForTracking = (): Trip[] => {
       totalSeats,
       price: busType === "Airconditioned" ? 200 : 180,
       tripDate: todayStr,
-      status: currentStatus,
+      // status: currentStatus, // Let TripCard handle status display if these trips were shown with it
       busPlateNumber: busPlate,
+      departureTimestamp: departureDateTime.getTime(),
+      arrivalTimestamp: arrivalDateTime.getTime(),
     };
   };
 

@@ -42,17 +42,19 @@ export interface Trip {
   direction: TripDirection;
   origin: string; // Starting point of the bus route
   destination: string; // Final destination of the bus route
-  departureTime: string;
-  arrivalTime: string;
+  departureTime: string; // HH:mm format
+  arrivalTime: string; // HH:mm format
   travelDurationMins: number;
   stopoverDurationMins: number;
   busType: BusType;
   availableSeats: number;
   totalSeats: number;
   price: number; // Price for the full route to final destination
-  tripDate: string;
-  status: TripStatus;
+  tripDate: string; // yyyy-MM-dd format
+  status?: TripStatus; // Made optional, will be derived on client
   busPlateNumber?: string;
+  departureTimestamp: number; // Milliseconds since epoch
+  arrivalTimestamp: number;   // Milliseconds since epoch
 }
 
 export type SeatStatus = "available" | "selected" | "reserved";
@@ -90,7 +92,7 @@ export interface Reservation {
   
   paymentType?: "deposit" | "full"; // Set on payment page
   amountPaid?: number; // Actual amount paid by the user, set on payment page
-  finalFarePaid: number; // This will be the actual amountPaid. Renaming for consistency from previous use.
+  finalFarePaid: number; // This will be the actual amountPaid.
 }
 
 export interface User {

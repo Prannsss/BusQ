@@ -56,21 +56,12 @@ const generateTodaysTrips = (): Trip[] => {
     const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
     
     const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-    const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 15)) : (30 + (currentTripId % 13));
+    // Deterministic available seats based on tripIdCounter
+    const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
     const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
+    // Deterministic price
     const finalPrice = busType === "Airconditioned" ? 200 : 180;
-
-    let currentStatus: TripStatus;
-    const now = new Date();
-
-    if (now < departureDateTime) {
-      currentStatus = "Scheduled";
-    } else if (now >= departureDateTime && now < arrivalDateTime) {
-      currentStatus = "Travelling";
-    } else { // now >= arrivalDateTime
-      currentStatus = "Parked"; // "Parked" signifies completed trip
-    }
 
     return {
       id: `trip-${currentTripId}`,
@@ -87,8 +78,10 @@ const generateTodaysTrips = (): Trip[] => {
       totalSeats: totalSeatsForType,
       price: finalPrice, 
       tripDate: todayStr,
-      status: currentStatus, 
-      busPlateNumber: `XYZ ${currentTripId % 100}${currentTripId % 10}`
+      // status: currentStatus, // Status will be derived client-side in TripCard
+      busPlateNumber: `XYZ ${currentTripId % 100}${currentTripId % 10}`,
+      departureTimestamp: departureDateTime.getTime(),
+      arrivalTimestamp: arrivalDateTime.getTime(),
     };
   };
 
