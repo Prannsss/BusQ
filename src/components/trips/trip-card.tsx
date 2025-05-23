@@ -15,15 +15,15 @@ interface TripCardProps {
 const getStatusBadgeVariant = (status: Trip["status"]): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
     case "Scheduled":
-      return "default"; // Blue or primary
+      return "default"; 
     case "On Standby":
-      return "secondary"; // Yellow-ish or secondary
+      return "secondary"; 
     case "Travelling":
-      return "outline"; // Green-ish or custom
+      return "outline"; 
     case "Completed":
-      return "outline"; // Gray
+      return "outline"; 
     case "Cancelled":
-      return "destructive"; // Red
+      return "destructive"; 
     case "Parked":
       return "secondary";
     default:
@@ -31,21 +31,22 @@ const getStatusBadgeVariant = (status: Trip["status"]): "default" | "secondary" 
   }
 };
 
+// Updated status badge colors based on new requirements
 const getStatusBadgeColors = (status: Trip["status"]): string => {
     switch (status) {
-      case "Scheduled":
-        return "bg-blue-500 text-blue-50";
-      case "On Standby":
-        return "bg-yellow-500 text-yellow-50";
-      case "Travelling":
-        return "bg-green-500 text-green-50";
-      case "Completed":
-        return "bg-gray-500 text-gray-50";
-      case "Cancelled":
-        return "bg-red-500 text-red-50";
       case "Parked":
-        return "bg-indigo-500 text-indigo-50";
+        return "bg-slate-500 text-slate-50"; // BG: #64748B (Slate 500), Text: #F8FAFC (Slate 50)
+      case "Scheduled":
+      case "On Standby":
+        return "bg-amber-400 text-amber-950"; // BG: #FACC15 (Amber 400), Text: #451A03 (Amber 950)
+      case "Travelling":
+        return "bg-emerald-500 text-emerald-50"; // BG: #10B981 (Emerald 500), Text: #ECFDF5 (Emerald 50)
+      case "Completed":
+        return "bg-gray-500 text-gray-50"; // BG: #6B7280 (Gray 500), Text: #F9FAFB (Gray 50)
+      case "Cancelled":
+        return "bg-red-600 text-red-50"; // BG: #DC2626 (Red 600), Text: #FEF2F2 (Red 50)
       default:
+        // Fallback, though all defined statuses should be covered.
         return "bg-primary text-primary-foreground";
     }
 }
