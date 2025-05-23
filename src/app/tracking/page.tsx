@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import React, { useState, useEffect, useMemo } from "react";
 import type { Trip, BusType, TripDirection, TripStatus } from "@/types";
-import { format, addMinutes } from 'date-fns';
+import { format, addMinutes, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
 
 // Simplified Fixed Schedule Configuration for Tracking Page
 const FIXED_SCHEDULE_MANTALONGON_TO_CEBU_TRACKING: Array<{ time: string; busType: BusType, busPlate: string }> = [
@@ -36,9 +36,10 @@ const FIXED_SCHEDULE_CEBU_TO_MANTALONGON_TRACKING: Array<{ time: string; busType
 const TRAVEL_DURATION_MINS_TRACKING = 240;
 
 const generateTodaysTripsForTracking = (): Trip[] => {
-  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const today = new Date();
+  const todayStr = format(today, "yyyy-MM-dd");
   const allTrips: Trip[] = [];
-  let tripIdCounter = 1000; // Start with a different counter to avoid ID clashes if used elsewhere
+  let tripIdCounter = 1000; 
 
   const createTripForTracking = (
     departureTimeStr: string,
@@ -49,10 +50,24 @@ const generateTodaysTripsForTracking = (): Trip[] => {
     busPlate: string
   ): Trip => {
     const [hours, minutes] = departureTimeStr.split(':').map(Number);
-    const departureDateTime = new Date(todayStr);
-    departureDateTime.setHours(hours, minutes, 0, 0);
+    
+    let departureDateTime = setHours(today, hours);
+    departureDateTime = setMinutes(departureDateTime, minutes);
+    departureDateTime = setSeconds(departureDateTime, 0);
+    departureDateTime = setMilliseconds(departureDateTime, 0);
+    
     const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_TRACKING);
     const totalSeats = busType === "Airconditioned" ? 65 : 53;
+
+    let currentStatus: TripStatus;
+    const now = new Date();
+    if (now < departureDateTime) {
+      currentStatus = "Scheduled";
+    } else if (now >= departureDateTime && now < arrivalDateTime) {
+      currentStatus = "Travelling";
+    } else {
+      currentStatus = "Parked";
+    }
 
     return {
       id: `track-trip-${tripIdCounter++}`,
@@ -65,11 +80,11 @@ const generateTodaysTripsForTracking = (): Trip[] => {
       travelDurationMins: TRAVEL_DURATION_MINS_TRACKING,
       stopoverDurationMins: 60,
       busType,
-      availableSeats: totalSeats, // Not critical for tracking display
+      availableSeats: totalSeats, 
       totalSeats,
       price: busType === "Airconditioned" ? 200 : 180,
       tripDate: todayStr,
-      status: "Scheduled" as TripStatus,
+      status: currentStatus,
       busPlateNumber: busPlate,
     };
   };
@@ -101,7 +116,7 @@ export default function TrackingPage() {
     if (selectedOrigin && allTrips.length > 0) {
       const filtered = allTrips.filter(trip => trip.origin === selectedOrigin);
       setAvailableDepartureTimes(filtered);
-      setSelectedTripId(""); // Reset selected trip when origin changes
+      setSelectedTripId(""); 
     } else {
       setAvailableDepartureTimes([]);
       setSelectedTripId("");
@@ -175,14 +190,10 @@ export default function TrackingPage() {
         </CardHeader>
         <CardContent className="p-0 md:p-0">
           <div className="h-[500px] w-full bg-muted rounded-b-md">
-            <BusMap busId={tripToTrack?.busPlateNumber || "default-bus-id"} /> {/* Pass a unique ID, plate number is good here */}
+            <BusMap busId={tripToTrack?.busPlateNumber || "default-bus-id"} /> 
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-  
-
-    

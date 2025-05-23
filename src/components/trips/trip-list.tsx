@@ -3,7 +3,7 @@ import React from "react"; // Added for React.useMemo
 import type { Trip, FilterableBusType, TripStatus, BusType, TripDirection, FilterableTripDirection } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
-import { format, addMinutes } from 'date-fns';
+import { format, addMinutes, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
 
 // Fixed Schedule Configuration
 const FIXED_SCHEDULE_MANTALONGON_TO_CEBU: Array<{ time: string; busType: BusType }> = [
@@ -28,11 +28,12 @@ const FIXED_SCHEDULE_CEBU_TO_MANTALONGON: Array<{ time: string; busType: BusType
 ];
 
 const TRAVEL_DURATION_MINS = 240; // 4 hours
-const STOPOVER_DURATION_MINS = 60; // 1 hour
+const STOPOVER_DURATION_MINS = 60; // 1 hour (Not directly used for status calculation here but part of Trip type)
 
 // Function to generate trips for the current day
 const generateTodaysTrips = (): Trip[] => {
-  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const today = new Date();
+  const todayStr = format(today, "yyyy-MM-dd");
   const allTrips: Trip[] = [];
   let tripIdCounter = 1;
 
@@ -42,29 +43,41 @@ const generateTodaysTrips = (): Trip[] => {
     busType: BusType,
     direction: TripDirection,
     origin: string,
-    destination: string, // This is now the final destination of the route
+    destination: string, 
     currentTripId: number
   ): Trip => {
     const [hours, minutes] = departureTimeStr.split(':').map(Number);
-    const departureDateTime = new Date(todayStr);
-    departureDateTime.setHours(hours, minutes, 0, 0);
+    
+    let departureDateTime = setHours(today, hours);
+    departureDateTime = setMinutes(departureDateTime, minutes);
+    departureDateTime = setSeconds(departureDateTime, 0);
+    departureDateTime = setMilliseconds(departureDateTime, 0);
     
     const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
     
     const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-    // Deterministic available seats based on tripIdCounter
     const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 15)) : (30 + (currentTripId % 13));
     const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-    // Fixed price based on busType
     const finalPrice = busType === "Airconditioned" ? 200 : 180;
+
+    let currentStatus: TripStatus;
+    const now = new Date();
+
+    if (now < departureDateTime) {
+      currentStatus = "Scheduled";
+    } else if (now >= departureDateTime && now < arrivalDateTime) {
+      currentStatus = "Travelling";
+    } else { // now >= arrivalDateTime
+      currentStatus = "Parked"; // "Parked" signifies completed trip
+    }
 
     return {
       id: `trip-${currentTripId}`,
       busId: `bus-${currentTripId % 100 + 1}`,
       direction,
       origin,
-      destination, // Final destination of this bus route
+      destination, 
       departureTime: departureTimeStr, 
       arrivalTime: format(arrivalDateTime, "HH:mm"),
       travelDurationMins: TRAVEL_DURATION_MINS,
@@ -74,17 +87,17 @@ const generateTodaysTrips = (): Trip[] => {
       totalSeats: totalSeatsForType,
       price: finalPrice, 
       tripDate: todayStr,
-      status: "Scheduled" as TripStatus, 
+      status: currentStatus, 
       busPlateNumber: `XYZ ${currentTripId % 100}${currentTripId % 10}`
     };
   };
 
-  // Generate trips from Mantalongon to Cebu City (final destination)
+  // Generate trips from Mantalongon to Cebu City
   FIXED_SCHEDULE_MANTALONGON_TO_CEBU.forEach(item => {
     allTrips.push(createTrip(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
   });
 
-  // Generate trips from Cebu City to Mantalongon (final destination)
+  // Generate trips from Cebu City to Mantalongon
   FIXED_SCHEDULE_CEBU_TO_MANTALONGON.forEach(item => {
     allTrips.push(createTrip(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
   });
