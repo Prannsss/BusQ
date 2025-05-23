@@ -41,7 +41,7 @@ const TripFilters = React.memo(function TripFilters({
     <Card className="shadow-lg">
       <CardContent className="p-6">
         <div className="flex flex-col sm:flex-row items-center gap-4 flex-wrap">
-            <div className="flex items-center text-lg font-semibold text-primary-foreground">
+            <div className="flex items-center text-lg font-semibold text-foreground">
                 <Filter className="h-5 w-5 mr-2 text-primary" />
                 Filter Trips
             </div>
@@ -81,3 +81,4 @@ const TripFilters = React.memo(function TripFilters({
 });
 
 export { TripFilters };
+

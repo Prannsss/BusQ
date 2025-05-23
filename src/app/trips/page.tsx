@@ -18,7 +18,7 @@ export default function TripsPage() {
         <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4">
           <Bus className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="text-4xl font-bold text-primary-foreground">Available Trips</h1>
+        <h1 className="text-4xl font-bold text-foreground">Available Trips</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Find and book your bus from Mantalongon to Cebu City or vice versa.
         </p>
@@ -38,3 +38,4 @@ export default function TripsPage() {
     </div>
   );
 }
+

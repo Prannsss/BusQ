@@ -75,7 +75,7 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
                 {status}
             </Badge>
         </div>
-        <CardTitle className="text-xl text-primary-foreground">{origin} <Route className="inline h-5 w-5 mx-1 text-muted-foreground" /> {destination}</CardTitle>
+        <CardTitle className="text-xl text-foreground">{origin} <Route className="inline h-5 w-5 mx-1 text-muted-foreground" /> {destination}</CardTitle>
         <CardDescription className="text-muted-foreground flex items-center">
           <Clock className="h-4 w-4 mr-2" /> {departureTime} - {arrivalTime}
         </CardDescription>
@@ -112,3 +112,4 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
 });
 
 export { TripCard };
+
