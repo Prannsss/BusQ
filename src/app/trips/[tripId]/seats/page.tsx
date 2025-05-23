@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation'; // Import useParams
+import { useParams } from 'next/navigation';
 import { SeatMap } from "@/components/seats/seat-map";
 import { Trip, BusType, TripStatus, TripDirection, mantalongonRouteStops, cebuRouteStops, PassengerType, passengerTypes } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -58,13 +58,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
       
-      // Deterministic available seats based on tripIdCounter
       const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-      // Deterministic price based on busType and tripIdCounter
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 13 % 40) - 20; // Consistent variation
+      const priceVariation = (currentTripId * 13 % 40) - 20; 
       const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
 
 
@@ -110,12 +108,12 @@ export default function SeatSelectionPage() {
   const params = useParams<{ tripId: string }>();
   const tripIdParam = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
 
-
   const [trip, setTrip] = useState<Trip | null>(null);
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
   const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
   const [loading, setLoading] = useState(true);
   const [selectedSeatsCount, setSelectedSeatsCount] = useState(0); 
+  const [dynamicRegularFarePerSeat, setDynamicRegularFarePerSeat] = useState<number>(0);
 
   useEffect(() => {
     async function loadTrip() {
@@ -128,24 +126,58 @@ export default function SeatSelectionPage() {
       const tripDetails = await getTripDetails(tripIdParam);
       setTrip(tripDetails);
       if (tripDetails) {
-        const defaultDropOff = tripDetails.origin === "Mantalongon" 
-            ? mantalongonRouteStops[mantalongonRouteStops.length - 1] 
-            : cebuRouteStops[cebuRouteStops.length - 1]; 
-        setSelectedDropOff(tripDetails.destination || defaultDropOff);
+        setSelectedDropOff(tripDetails.destination); // Initially set to final destination
       }
       setLoading(false);
     }
     loadTrip();
   }, [tripIdParam]); 
 
-  const regularFare = trip ? trip.price : 0;
+  useEffect(() => {
+    if (!trip || !selectedDropOff) {
+      setDynamicRegularFarePerSeat(0);
+      return;
+    }
+
+    const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
+    const selectedStopIndex = currentRouteStops.indexOf(selectedDropOff as any); // Cast as any to satisfy indexOf
+    const totalStopsOnRoute = currentRouteStops.length;
+
+    if (selectedStopIndex === -1 || totalStopsOnRoute === 0) {
+      setDynamicRegularFarePerSeat(trip.price); // Fallback to full price
+      return;
+    }
+    
+    // If selected drop-off is the final destination of the trip
+    if (selectedDropOff === trip.destination) {
+      setDynamicRegularFarePerSeat(trip.price);
+      return;
+    }
+
+    // Simple linear scaling: (index + 1) / totalStops * fullRoutePrice
+    // Ensure minimum fare, e.g., 30% of full price if it's one of the first stops
+    const minFareRatio = 0.3; // Minimum fare is 30% of the full route price
+    const calculatedRatio = (selectedStopIndex + 1) / totalStopsOnRoute;
+    
+    // Ensure ratio doesn't exceed 1 (in case selectedDropOff is somehow beyond final destination in list)
+    // And ensure it's not less than minFareRatio for early stops
+    const fareRatio = Math.min(1, Math.max(minFareRatio, calculatedRatio));
+    
+    let calculatedFare = trip.price * fareRatio;
+    
+    // Round to 2 decimal places
+    setDynamicRegularFarePerSeat(parseFloat(calculatedFare.toFixed(2)));
+
+  }, [trip, selectedDropOff]);
+
+
   const isDiscountableType = passengerType === "Student" || passengerType === "Senior" || passengerType === "PWD";
   const discountApplied = isDiscountableType;
   const discountRate = 0.20; 
 
   const calculatedFarePerSeat = discountApplied
-    ? regularFare * (1 - discountRate)
-    : regularFare;
+    ? dynamicRegularFarePerSeat * (1 - discountRate)
+    : dynamicRegularFarePerSeat;
 
   const totalPrice = calculatedFarePerSeat * selectedSeatsCount;
 
@@ -170,10 +202,13 @@ export default function SeatSelectionPage() {
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
+    const regularFareForBooking = dynamicRegularFarePerSeat * selectedSeatsCount;
+    const finalFareForBooking = totalPrice;
+
     const fareDetails = {
-        regularFare: regularFare * selectedSeatsCount,
+        regularFare: regularFareForBooking,
         discountApplied: discountApplied,
-        finalFarePaid: totalPrice,
+        finalFarePaid: finalFareForBooking,
         passengerType: passengerType,
         selectedDropOff: selectedDropOff,
     };
@@ -195,8 +230,8 @@ export default function SeatSelectionPage() {
         alert(
             `Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff}.\n` +
             `Passenger Type: ${fareDetails.passengerType}\n` +
-            `Regular Fare/Seat: PHP ${regularFare.toFixed(2)}\n` +
-            (fareDetails.discountApplied ? `Discount (20%): -PHP ${(regularFare * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
+            `Regular Fare/Seat: PHP ${dynamicRegularFarePerSeat.toFixed(2)}\n` +
+            (fareDetails.discountApplied ? `Discount (20%): -PHP ${(dynamicRegularFarePerSeat * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
             `Final Price/Seat: PHP ${calculatedFarePerSeat.toFixed(2)}\n`+
             `Total Price: PHP ${fareDetails.finalFarePaid.toFixed(2)}\n` +
             `(Functionality not yet implemented).`
@@ -264,12 +299,12 @@ export default function SeatSelectionPage() {
               <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Regular Fare/Seat:</span>
-                <span className="font-semibold">PHP {regularFare.toFixed(2)}</span>
+                <span className="font-semibold">PHP {dynamicRegularFarePerSeat.toFixed(2)}</span>
               </div>
                 {discountApplied && (
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground flex items-center"><Percent className="h-4 w-4 mr-2" /> Discount (20%):</span>
-                        <span className="font-semibold text-green-500">- PHP {(regularFare * discountRate).toFixed(2)}</span>
+                        <span className="font-semibold text-green-500">- PHP {(dynamicRegularFarePerSeat * discountRate).toFixed(2)}</span>
                     </div>
                 )}
               <div className="flex items-center justify-between">
@@ -297,18 +332,18 @@ export default function SeatSelectionPage() {
             <CardContent>
                 <div className="space-y-2">
                     <Label htmlFor="dropoff-select" className="text-muted-foreground">Your Destination:</Label>
-                    <Select value={selectedDropOff} onValueChange={setSelectedDropOff}>
+                    <Select value={selectedDropOff} onValueChange={setSelectedDropOff} disabled={!trip}>
                         <SelectTrigger id="dropoff-select" className="w-full bg-input border-border focus:ring-primary">
                             <SelectValue placeholder="Select drop-off point" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-popover">
-                            {currentRouteStops.map(stop => (
+                            {trip && currentRouteStops.map(stop => (
                                 <SelectItem key={stop} value={stop}>{stop}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                        The bus route is from {trip.origin} to {trip.destination}. Select your specific alighting point.
+                        The bus route is from {trip?.origin} to {trip?.destination}. Select your specific alighting point.
                     </p>
                 </div>
             </CardContent>
@@ -347,7 +382,7 @@ export default function SeatSelectionPage() {
           <div className="space-y-2">
             <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
-                disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0}
+                disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0 || !trip}
                 onClick={handleConfirmReservation}
             >
                 {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
@@ -363,3 +398,4 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
+
