@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation'; // Import useParams
@@ -58,12 +59,12 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
       
       // Deterministic available seats based on tripId
-      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23)); // Adjusted deterministic logic
+      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23)); 
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable));
 
       // Deterministic price based on busType and tripId
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 13 % 40) - 20; // Adjusted deterministic variation
+      const priceVariation = (currentTripId * 13 % 40) - 20; 
       const finalPrice = parseFloat(Math.max(basePrice * 0.7, basePrice + priceVariation).toFixed(2));
 
 
@@ -102,8 +103,8 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
 const ALL_MOCK_TRIPS_SEATS = generateMockTripsForSeatsPage();
 
-async function getTripDetails(tripId: string): Promise<Trip | null> {
-  return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripId) || null;
+async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
+  return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripIdToFind) || null;
 }
 
 export default function SeatSelectionPage() {
@@ -358,8 +359,8 @@ export default function SeatSelectionPage() {
             {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
           </Button>
           <Link href="/trips" className="w-full">
-            <Button variant="outline" className="w-full text-accent-foreground border-accent hover:bg-accent/20">
-              Change Trip
+            <Button variant="outline" className="w-full text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground">
+              Cancel
             </Button>
           </Link>
         </div>
