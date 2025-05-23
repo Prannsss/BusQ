@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation'; // Import useParams
@@ -57,15 +56,15 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-
+      
       // Deterministic available seats based on tripId
-      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 15)) : (30 + (currentTripId % 13));
+      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23)); // Adjusted deterministic logic
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable));
 
       // Deterministic price based on busType and tripId
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 17 % 30); // Consistent variation
-      const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation - 15).toFixed(2));
+      const priceVariation = (currentTripId * 13 % 40) - 20; // Adjusted deterministic variation
+      const finalPrice = parseFloat(Math.max(basePrice * 0.7, basePrice + priceVariation).toFixed(2));
 
 
       return {
@@ -85,9 +84,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
     });
 
+    // For trips from Cebu, their final destination is Mantalongon
     FIXED_SCHEDULE_B_TO_A_SEATS.forEach(item => {
         allTrips.push(createTripForSeatsPage(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
     });
+
 
     allTrips.sort((a, b) => {
         const timeComp = a.departureTime.localeCompare(b.departureTime);
@@ -106,22 +107,19 @@ async function getTripDetails(tripId: string): Promise<Trip | null> {
 }
 
 export default function SeatSelectionPage() {
-  const routeParams = useParams<{ tripId: string }>();
-  // Ensure tripId is a string, as useParams can return string | string[]
-  // Also handles the case where routeParams might be null initially.
-  const tripId = routeParams?.tripId ? (Array.isArray(routeParams.tripId) ? routeParams.tripId[0] : routeParams.tripId) : undefined;
+  const params = useParams<{ tripId: string }>();
+  const tripId = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
+
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
   const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
   const [loading, setLoading] = useState(true);
-  const [selectedSeatsCount, setSelectedSeatsCount] = useState(0); // This would be updated by SeatMap component
+  const [selectedSeatsCount, setSelectedSeatsCount] = useState(0); 
 
   useEffect(() => {
     async function loadTrip() {
       if (!tripId) {
-        // If tripId is not yet available from params, don't attempt to load
-        // You might want to set trip to null and loading to false or handle differently
         setTrip(null);
         setLoading(false);
         return;
@@ -130,17 +128,21 @@ export default function SeatSelectionPage() {
       const tripDetails = await getTripDetails(tripId);
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination);
+        // Default drop off to final destination if not Mantalongon or Cebu City for safety
+        const defaultDropOff = tripDetails.origin === "Mantalongon" 
+            ? mantalongonRouteStops[mantalongonRouteStops.length - 1] // Cebu City
+            : cebuRouteStops[cebuRouteStops.length - 1]; // Mantalongon
+        setSelectedDropOff(tripDetails.destination || defaultDropOff);
       }
       setLoading(false);
     }
     loadTrip();
-  }, [tripId]); // Depend on tripId obtained from useParams
+  }, [tripId]); 
 
   const regularFare = trip ? trip.price : 0;
   const isDiscountableType = passengerType === "Student" || passengerType === "Senior" || passengerType === "PWD";
   const discountApplied = isDiscountableType;
-  const discountRate = 0.20; // 20% discount
+  const discountRate = 0.20; 
 
   const calculatedFarePerSeat = discountApplied
     ? regularFare * (1 - discountRate)
@@ -169,23 +171,42 @@ export default function SeatSelectionPage() {
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
-    // In a real app, this would interact with a backend.
-    // Here, we simulate the fare calculation result in the alert.
     const fareDetails = {
-        regularFare: regularFare * selectedSeatsCount, // regularFare is per seat, multiply by count
+        regularFare: regularFare * selectedSeatsCount,
         discountApplied: discountApplied,
         finalFarePaid: totalPrice,
         passengerType: passengerType,
+        selectedDropOff: selectedDropOff,
     };
-    alert(
-      `Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff}.\n` +
-      `Passenger Type: ${fareDetails.passengerType}\n` +
-      `Regular Fare/Seat: PHP ${regularFare.toFixed(2)}\n` +
-      (fareDetails.discountApplied ? `Discount (20%): -PHP ${(regularFare * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
-      `Final Price/Seat: PHP ${calculatedFarePerSeat.toFixed(2)}\n`+
-      `Total Price: PHP ${fareDetails.finalFarePaid.toFixed(2)}\n` +
-      `(Functionality not yet implemented).`
-    );
+    // In a real app, navigate to a confirmation/payment page, then to receipt.
+    // For now, we mock the ID and navigate directly.
+    const mockReservationId = "mock-reservation-123"; 
+    // Store fareDetails in localStorage or pass via query params if needed by receipt page (for mock)
+    // This is not ideal for production.
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('mockReservationDetails', JSON.stringify({
+            ...trip, // Pass trip details
+            passengerName: "Juan Dela Cruz", // Mock passenger name
+            seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers
+            userType: passengerType,
+            selectedDestination: selectedDropOff,
+            regularFare: fareDetails.regularFare,
+            discountApplied: fareDetails.discountApplied,
+            finalFarePaid: fareDetails.finalFarePaid,
+            id: mockReservationId, // Add reservation ID here
+        }));
+        window.location.href = `/reservations/${mockReservationId}/receipt`;
+    } else {
+        alert(
+            `Reservation for ${selectedSeatsCount} seat(s) to ${selectedDropOff}.\n` +
+            `Passenger Type: ${fareDetails.passengerType}\n` +
+            `Regular Fare/Seat: PHP ${regularFare.toFixed(2)}\n` +
+            (fareDetails.discountApplied ? `Discount (20%): -PHP ${(regularFare * discountRate * selectedSeatsCount).toFixed(2)}\n` : '') +
+            `Final Price/Seat: PHP ${calculatedFarePerSeat.toFixed(2)}\n`+
+            `Total Price: PHP ${fareDetails.finalFarePaid.toFixed(2)}\n` +
+            `(Functionality not yet implemented).`
+        );
+    }
   };
 
 
@@ -193,7 +214,7 @@ export default function SeatSelectionPage() {
     <div className="container mx-auto py-8">
       <header className="text-center mb-8">
         <Ticket className="mx-auto h-12 w-12 text-primary mb-4" />
-        <h1 className="text-4xl font-bold text-primary-foreground">Select Seats, Drop-off & Passenger Type</h1>
+        <h1 className="text-4xl font-bold text-primary-foreground">Select Seats & Passenger Details</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Bus Route: {trip.origin} to {trip.destination}.
         </p>
@@ -210,11 +231,68 @@ export default function SeatSelectionPage() {
               <CardDescription>Click on available seats to select them. Total seats: {trip.totalSeats}. Seats available: {trip.availableSeats}</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Pass a callback to update selectedSeatsCount from SeatMap */}
               <SeatMap busType={trip.busType} onSeatSelectionChange={setSelectedSeatsCount} />
             </CardContent>
           </Card>
+        </div>
 
+        <div className="md:col-span-1 space-y-6">
+          <Card className="shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-xl text-primary">Trip & Fare Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Route className="h-4 w-4 mr-2" /> Route:</span>
+                <span className="font-semibold">{trip.origin} to {trip.destination}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Calendar className="h-4 w-4 mr-2" /> Date:</span>
+                <span className="font-semibold">{trip.tripDate}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Clock className="h-4 w-4 mr-2" /> Departure:</span>
+                <span className="font-semibold">{trip.departureTime} (from {trip.origin})</span>
+              </div>
+               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Clock className="h-4 w-4 mr-2" /> Est. Arrival:</span>
+                <span className="font-semibold">{trip.arrivalTime} (at {trip.destination})</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Bus Type:</span>
+                <span className="font-semibold">{trip.busType}</span>
+              </div>
+               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                <span className="font-semibold">{trip.status}</span>
+              </div>
+              <Separator className="my-3 bg-border" />
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Regular Fare/Seat:</span>
+                <span className="font-semibold">PHP {regularFare.toFixed(2)}</span>
+              </div>
+                {discountApplied && (
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center"><Percent className="h-4 w-4 mr-2" /> Discount (20%):</span>
+                        <span className="font-semibold text-green-500">- PHP {(regularFare * discountRate).toFixed(2)}</span>
+                    </div>
+                )}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Final Fare/Seat:</span>
+                <span className="font-semibold">PHP {calculatedFarePerSeat.toFixed(2)}</span>
+              </div>
+              <Separator className="my-3 bg-border" />
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><Armchair className="h-4 w-4 mr-2" /> Seats Selected:</span>
+                <span className="font-semibold" id="selected-seats-count">{selectedSeatsCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-lg">
+                <span className="text-muted-foreground">Total Price:</span>
+                <span className="font-bold text-primary" id="total-price">PHP {totalPrice.toFixed(2)}</span>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card className="shadow-xl">
             <CardHeader>
                 <CardTitle className="text-xl text-primary flex items-center">
@@ -271,72 +349,7 @@ export default function SeatSelectionPage() {
                 </div>
             </CardContent>
           </Card>
-        </div>
 
-        <div className="md:col-span-1 space-y-6">
-          <Card className="shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-xl text-primary">Trip & Fare Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Route className="h-4 w-4 mr-2" /> Route:</span>
-                <span className="font-semibold">{trip.origin} to {trip.destination}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2" /> Your Drop-off:</span>
-                <span className="font-semibold">{selectedDropOff || 'Select a drop-off'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><UserCircle className="h-4 w-4 mr-2" /> Passenger Type:</span>
-                <span className="font-semibold">{passengerType}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Calendar className="h-4 w-4 mr-2" /> Date:</span>
-                <span className="font-semibold">{trip.tripDate}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Clock className="h-4 w-4 mr-2" /> Departure:</span>
-                <span className="font-semibold">{trip.departureTime} (from {trip.origin})</span>
-              </div>
-               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Clock className="h-4 w-4 mr-2" /> Est. Arrival:</span>
-                <span className="font-semibold">{trip.arrivalTime} (at {trip.destination})</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Bus Type:</span>
-                <span className="font-semibold">{trip.busType}</span>
-              </div>
-               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Status:</span>
-                <span className="font-semibold">{trip.status}</span>
-              </div>
-              <Separator className="my-3 bg-border" />
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Regular Fare/Seat:</span>
-                <span className="font-semibold">PHP {regularFare.toFixed(2)}</span>
-              </div>
-                {discountApplied && (
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center"><Percent className="h-4 w-4 mr-2" /> Discount (20%):</span>
-                        <span className="font-semibold text-green-500">- PHP {(regularFare * discountRate).toFixed(2)}</span>
-                    </div>
-                )}
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Tag className="h-4 w-4 mr-2" /> Final Fare/Seat:</span>
-                <span className="font-semibold">PHP {calculatedFarePerSeat.toFixed(2)}</span>
-              </div>
-              <Separator className="my-3 bg-border" />
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center"><Armchair className="h-4 w-4 mr-2" /> Seats Selected:</span>
-                <span className="font-semibold" id="selected-seats-count">{selectedSeatsCount}</span>
-              </div>
-              <div className="flex items-center justify-between text-lg">
-                <span className="text-muted-foreground">Total Price:</span>
-                <span className="font-bold text-primary" id="total-price">PHP {totalPrice.toFixed(2)}</span>
-              </div>
-            </CardContent>
-          </Card>
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
             disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0}
@@ -354,4 +367,3 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
-
