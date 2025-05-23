@@ -80,9 +80,11 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
       
+      // Deterministic available seats based on tripIdCounter
       const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
+      // Fixed price based on busType
       const finalPrice = busType === "Airconditioned" ? 200 : 180;
 
 
@@ -166,25 +168,22 @@ export default function SeatSelectionPage() {
     if (origin === "Mantalongon") {
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
     } else if (origin === "Cebu City") {
-      if (selectedDropOff === "Mantalongon") {
-         fareFromMatrix = FARE_MATRIX["Mantalongon"]?.[busType]; 
-      } else {
-         fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
-         if (!fareFromMatrix) {
-             console.warn(`Fare from Cebu City to "${selectedDropOff}" with ${busType} not explicitly in matrix. Using full route price as fallback.`);
-             fareFromMatrix = fullRoutePrice; 
-         }
-      }
+      // For Cebu to Mantalongon route, Mantalongon is the main listed destination in FARE_MATRIX
+      // If selectedDropOff is Mantalongon itself, use that entry.
+      // For other intermediate stops from Cebu, they should also be in FARE_MATRIX if supported.
+      fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
     }
 
 
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
+      // This handles cases where the matrix might not explicitly list the final destination,
+      // though it's good practice to have it.
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
-      console.warn(`Fare not found for destination: "${selectedDropOff}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
-      setDynamicRegularFarePerSeat(fullRoutePrice);
+      console.warn(`Fare not found for destination: "${selectedDropOff}" from "${origin}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
+      setDynamicRegularFarePerSeat(fullRoutePrice); // Fallback to full route price if not in matrix
     }
   }, [trip, selectedDropOff]);
 
@@ -419,8 +418,11 @@ export default function SeatSelectionPage() {
                 {isBookable ? "Confirm Reservation" : "Booking Unavailable"}
             </Button>
             <Link href="/trips" className="w-full block">
-                <Button variant="outline" className="w-full text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground">
-                Cancel
+                <Button 
+                    variant="outline" 
+                    className="w-full text-muted-foreground border-accent hover:bg-accent/20 hover:text-accent-foreground"
+                >
+                    Cancel
                 </Button>
             </Link>
           </div>
