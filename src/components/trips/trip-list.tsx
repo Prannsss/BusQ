@@ -1,5 +1,6 @@
 
-import type { Trip, FilterableBusType, TripStatus, BusType, FilterableTripDirection, TripDirection } from "@/types";
+import React from "react"; // Added for React.useMemo
+import type { Trip, FilterableBusType, TripStatus, BusType, TripDirection } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
 import { format, addMinutes } from 'date-fns';
@@ -49,16 +50,18 @@ const generateTodaysTrips = (): Trip[] => {
     departureDateTime.setHours(hours, minutes, 0, 0);
     
     const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
-    // Deterministic seat availability based on tripIdCounter
+    
     const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-    const baseAvailable = busType === "Airconditioned" ? 40 : 30;
-    const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable + (currentTripId % 25) - 10));
+    // Deterministic available seats based on tripIdCounter
+    const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 15)) : (30 + (currentTripId % 13));
+    const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-
-    // Deterministic price based on busType and tripIdCounter
+    // Deterministic price based on busType and tripId
     const basePrice = busType === "Airconditioned" ? 250 : 180;
-    const priceVariation = (currentTripId * 13 % 41) - 20; // Ensure some variation
-    const finalPrice = Math.max(basePrice * 0.8, basePrice + priceVariation); // Ensure price is not too low
+    // Consistent variation based on tripId for deterministic pricing
+    const priceVariation = (currentTripId * 17 % 30) -15; // e.g. range -15 to +14
+    const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
+
 
     return {
       id: `trip-${currentTripId}`,
@@ -105,15 +108,19 @@ const mockTrips: Trip[] = generateTodaysTrips();
 
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
-  activeDirectionFilter: FilterableTripDirection;
+  activeDirectionFilter: TripDirection | "all";
 }
 
 export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
-  const filteredTrips = mockTrips.filter(trip => {
-    const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
-    const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
-    return busTypeMatch && directionMatch;
-  });
+  // Memoize filteredTrips to avoid re-calculating on every render unless filter props change.
+  // mockTrips itself is stable as it's defined at the module level.
+  const filteredTrips = React.useMemo(() => {
+    return mockTrips.filter(trip => {
+      const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
+      const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
+      return busTypeMatch && directionMatch;
+    });
+  }, [activeBusTypeFilter, activeDirectionFilter]); // Dependencies are the filter props
 
   if (filteredTrips.length === 0) {
     return (
