@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { APIProvider, Map, Marker, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Construction } from 'lucide-react'; // Added Construction
 
 interface BusMapProps {
   busId: string; // To fetch specific bus location
@@ -53,13 +54,14 @@ export function BusMap({ busId }: BusMapProps) {
     );
   }
   
-  if (error) {
+  if (error) { // This will be true if googleMapsApiKey is missing
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-destructive/10 text-destructive p-4">
-        <AlertTriangle className="h-12 w-12 mb-4" />
-        <p className="font-semibold text-lg">Map Error</p>
-        <p className="text-center">{error}</p>
-        <p className="text-center mt-2 text-sm">The map functionality is currently unavailable.</p>
+      <div className="flex flex-col items-center justify-center h-full bg-card text-card-foreground p-6 rounded-lg shadow-lg">
+        <Construction className="h-16 w-16 text-primary mb-5" />
+        <h2 className="text-2xl font-semibold text-primary-foreground mb-3">Under Development</h2>
+        <p className="text-center text-muted-foreground text-md max-w-sm">
+          This feature is currently under development and will be coming soon.
+        </p>
       </div>
     );
   }
