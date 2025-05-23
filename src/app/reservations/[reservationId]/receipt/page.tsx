@@ -35,8 +35,8 @@ async function getReservationDetails(reservationId: string): Promise<Reservation
     const discountApplied = userType === "Student" || userType === "Senior" || userType === "PWD";
     const discountRate = 0.20;
     
-    const amountDue = discountApplied ? regularFare * (1 - discountRate) * 2 : regularFare * 2; // For 2 seats
-    const amountPaid = amountDue * 0.3; // Example: 30% deposit paid
+    const amountDueAfterDiscount = discountApplied ? regularFare * (1 - discountRate) * 2 : regularFare * 2; // For 2 seats
+    const amountPaidExample = amountDueAfterDiscount * 0.3; // Example: 30% deposit paid
 
     return {
       id: "mock-reservation-123",
@@ -51,14 +51,72 @@ async function getReservationDetails(reservationId: string): Promise<Reservation
       userType: userType,
       regularFareTotal: regularFare * 2, 
       discountApplied: discountApplied,
-      amountDue: amountDue,
+      amountDue: amountDueAfterDiscount, // Total after discount
       paymentType: "deposit",
-      amountPaid: amountPaid,
-      finalFarePaid: amountPaid,
+      amountPaid: amountPaidExample, // Amount paid for deposit
+      finalFarePaid: amountPaidExample, // Actual final amount paid
     };
   }
   return null;
 }
+
+function generateReceiptHtml(reservation: Reservation): string {
+  const discountAmount = reservation.regularFareTotal - reservation.amountDue;
+  return `
+    <html>
+      <head>
+        <title>BusQ Reservation Receipt - ${reservation.id}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 20px; color: #333; background-color: #f9f9f9; }
+          .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+          h1 { color: #FF6600; text-align: center; border-bottom: 2px solid #FF6600; padding-bottom: 10px; }
+          h2 { color: #FF6600; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9em; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+          th { background-color: #f8f8f8; font-weight: 600; }
+          .total { font-weight: bold; font-size: 1.1em; }
+          .footer-note { text-align: center; margin-top: 30px; font-size: 0.8em; color: #777; }
+          hr { border: 0; border-top: 1px dashed #ccc; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>BusQ Reservation Receipt</h1>
+          <p><strong>Reservation ID:</strong> ${reservation.id}</p>
+          
+          <h2>Passenger & Trip Details</h2>
+          <table>
+            <tr><th>Passenger Name:</th><td>${reservation.passengerName}</td></tr>
+            <tr><th>Passenger Type:</th><td>${reservation.userType}</td></tr>
+            ${reservation.origin && reservation.selectedDestination ? `<tr><th>Route:</th><td>${reservation.origin} to ${reservation.selectedDestination}</td></tr>` : ''}
+            <tr><th>Bus Type:</th><td>${reservation.busType}</td></tr>
+            ${reservation.tripDate ? `<tr><th>Departure Date:</th><td>${reservation.tripDate}</td></tr>` : ''}
+            <tr><th>Departure Time:</th><td>${reservation.departureTime}</td></tr>
+            <tr><th>Seat Number(s):</th><td>${reservation.seatNumbers.join(", ")}</td></tr>
+          </table>
+          
+          <h2>Fare Breakdown</h2>
+          <table>
+            <tr><th>Total Regular Fare:</th><td>PHP ${reservation.regularFareTotal.toFixed(2)}</td></tr>
+            ${reservation.discountApplied ? `<tr><th>Discount Applied (20%):</th><td style="color: green;">- PHP ${discountAmount.toFixed(2)}</td></tr>` : ''}
+            <tr><th>Amount Due (After Discount):</th><td>PHP ${reservation.amountDue.toFixed(2)}</td></tr>
+          </table>
+          
+          ${reservation.paymentType && reservation.finalFarePaid !== undefined ? `
+            <h2>Payment Details</h2>
+            <table>
+              <tr><th>Payment Type:</th><td>${reservation.paymentType === "deposit" ? "30% Deposit" : "Full Payment"}</td></tr>
+              <tr><th class="total">Total Amount Paid:</th><td class="total" style="color: #FF6600;">PHP ${reservation.finalFarePaid.toFixed(2)}</td></tr>
+            </table>
+            ${reservation.paymentType === "deposit" && (reservation.amountDue - reservation.finalFarePaid) > 0 ? `<p class="footer-note">Remaining balance of PHP ${(reservation.amountDue - reservation.finalFarePaid).toFixed(2)} to be paid to the bus conductor.</p>` : ''}
+          ` : ''}
+          <p class="footer-note">Thank you for choosing BusQ! Have a safe trip.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
 
 export default function ReservationReceiptPage() {
   const params = useParams<{ reservationId: string }>();
@@ -81,6 +139,20 @@ export default function ReservationReceiptPage() {
     }
     loadReservation();
   }, [reservationId, router]);
+
+  const handleDownloadHtmlReceipt = () => {
+    if (!reservation) return;
+    const htmlContent = generateReceiptHtml(reservation);
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BusQ_Receipt_${reservation.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
 
   if (loading) {
@@ -114,10 +186,10 @@ export default function ReservationReceiptPage() {
         <Button 
           variant="default" 
           size="lg" 
-          onClick={() => alert("PDF Download functionality not yet implemented.")}
+          onClick={handleDownloadHtmlReceipt}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          <Download className="mr-2 h-5 w-5" /> Download PDF
+          <Download className="mr-2 h-5 w-5" /> Download Receipt
         </Button>
         <Button 
           variant="outline" 
@@ -131,3 +203,4 @@ export default function ReservationReceiptPage() {
     </div>
   );
 }
+
