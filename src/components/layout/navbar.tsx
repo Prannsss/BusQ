@@ -58,7 +58,7 @@ export function Navbar() {
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="text-sm px-3 py-1.5 md:px-4 md:py-2 text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground"
+          className="text-sm px-3 py-1.5 md:px-4 md:py-2 text-muted-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground"
         >
           <LogOut className="h-4 w-4" />
           <span className="ml-1.5 md:ml-2">Logout</span>
@@ -71,7 +71,7 @@ export function Navbar() {
           <Button
             variant="outline"
             className={cn(
-              "text-sm px-3 py-1.5 md:px-4 md:py-2 text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground",
+              "text-sm px-3 py-1.5 md:px-4 md:py-2 text-muted-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground",
               pathname === "/login" && "ring-2 ring-primary"
             )}
           >
@@ -101,7 +101,8 @@ export function Navbar() {
         <SheetClose asChild>
           <Button
             onClick={handleLogout}
-            className="flex items-center justify-center space-x-3 px-3 py-3 rounded-md text-base font-medium text-center w-full text-primary-foreground border border-accent hover:bg-accent/20 hover:text-primary-foreground"
+            variant="outline"
+            className="flex items-center justify-center space-x-3 px-3 py-3 rounded-md text-base font-medium text-center w-full text-muted-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
@@ -117,7 +118,7 @@ export function Navbar() {
             onClick={closeMobileMenu}
             className={cn(
               "flex items-center justify-center space-x-3 px-3 py-3 rounded-md text-base font-medium text-center",
-              "text-primary-foreground border border-accent hover:bg-accent/20 hover:text-primary-foreground",
+              "text-muted-foreground border border-accent hover:bg-accent/20 hover:text-primary-foreground",
               pathname === "/login" && "ring-2 ring-offset-2 ring-offset-card ring-primary"
             )}
           >
