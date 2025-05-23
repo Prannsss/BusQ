@@ -58,12 +58,14 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
       const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
       
-      const baseAvailable = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23)); 
-      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailable));
+      // Deterministic available seats based on tripIdCounter
+      const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
+      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
+      // Deterministic price based on busType and tripIdCounter
       const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 13 % 40) - 20; 
-      const finalPrice = parseFloat(Math.max(basePrice * 0.7, basePrice + priceVariation).toFixed(2));
+      const priceVariation = (currentTripId * 13 % 40) - 20; // Consistent variation
+      const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
 
 
       return {
@@ -342,7 +344,7 @@ export default function SeatSelectionPage() {
                 </div>
             </CardContent>
           </Card>
-          <div className="mt-auto space-y-2 pt-6">
+          <div className="space-y-2">
             <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
                 disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0}
