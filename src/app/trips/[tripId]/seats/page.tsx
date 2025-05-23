@@ -61,9 +61,7 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
       const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
       const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-      const basePrice = busType === "Airconditioned" ? 250 : 180;
-      const priceVariation = (currentTripId * 13 % 40) - 20; 
-      const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
+      const finalPrice = busType === "Airconditioned" ? 200 : 180;
 
 
       return {

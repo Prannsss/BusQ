@@ -1,6 +1,6 @@
 
 import React from "react"; // Added for React.useMemo
-import type { Trip, FilterableBusType, TripStatus, BusType, TripDirection } from "@/types";
+import type { Trip, FilterableBusType, TripStatus, BusType, TripDirection, FilterableTripDirection } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
 import { format, addMinutes } from 'date-fns';
@@ -56,12 +56,8 @@ const generateTodaysTrips = (): Trip[] => {
     const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 15)) : (30 + (currentTripId % 13));
     const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
 
-    // Deterministic price based on busType and tripId
-    const basePrice = busType === "Airconditioned" ? 250 : 180;
-    // Consistent variation based on tripId for deterministic pricing
-    const priceVariation = (currentTripId * 17 % 30) -15; // e.g. range -15 to +14
-    const finalPrice = parseFloat(Math.max(basePrice * 0.8, basePrice + priceVariation).toFixed(2));
-
+    // Fixed price based on busType
+    const finalPrice = busType === "Airconditioned" ? 200 : 180;
 
     return {
       id: `trip-${currentTripId}`,
@@ -108,19 +104,17 @@ const mockTrips: Trip[] = generateTodaysTrips();
 
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
-  activeDirectionFilter: TripDirection | "all";
+  activeDirectionFilter: FilterableTripDirection;
 }
 
 export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
-  // Memoize filteredTrips to avoid re-calculating on every render unless filter props change.
-  // mockTrips itself is stable as it's defined at the module level.
   const filteredTrips = React.useMemo(() => {
     return mockTrips.filter(trip => {
       const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
       const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
       return busTypeMatch && directionMatch;
     });
-  }, [activeBusTypeFilter, activeDirectionFilter]); // Dependencies are the filter props
+  }, [activeBusTypeFilter, activeDirectionFilter]); 
 
   if (filteredTrips.length === 0) {
     return (
