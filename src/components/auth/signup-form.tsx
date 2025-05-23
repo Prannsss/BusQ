@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Mail, Lock, User } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 const signupFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -33,6 +34,7 @@ type SignupFormValues = z.infer<typeof signupFormSchema>;
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter(); // Initialize router
+  const { toast } = useToast(); // Initialize useToast
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupFormSchema),
@@ -62,7 +64,11 @@ export function SignupForm() {
     }
 
     setIsLoading(false);
-    alert("Signup successful! Your details have been (mock) registered locally. Please proceed to login.");
+    toast({
+      title: "Signup Successful",
+      description: "Your details have been registered. Please log in.",
+      variant: "default", // or "success" if you have that variant
+    });
     router.push('/login'); // Redirect to login page
   }
 
