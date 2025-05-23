@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { TripList } from "@/components/trips/trip-list";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { Separator } from "@/components/ui/separator";
@@ -9,6 +10,12 @@ import { Bus } from "lucide-react";
 import type { FilterableBusType, FilterableTripDirection } from "@/types";
 
 export default function TripsPage() {
+  const searchParams = useSearchParams(); // Use the hook to access search parameters
+
+  // Example: You could potentially use searchParams to initialize filters:
+  // const initialBusType = searchParams.get('busType') as FilterableBusType || "all";
+  // const initialDirection = searchParams.get('direction') as FilterableTripDirection || "all";
+
   const [activeBusTypeFilter, setActiveBusTypeFilter] = useState<FilterableBusType>("all");
   const [activeDirectionFilter, setActiveDirectionFilter] = useState<FilterableTripDirection>("all");
 
@@ -38,4 +45,3 @@ export default function TripsPage() {
     </div>
   );
 }
-
