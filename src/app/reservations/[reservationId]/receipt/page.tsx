@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import { ReceiptDetails } from "@/components/reservations/receipt-details";
 import { Reservation, PassengerType } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Download, Info, Printer } from "lucide-react";
+import { Download, Info, Printer, CheckCircle } from "lucide-react"; // Added CheckCircle
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -30,12 +30,12 @@ async function getReservationDetails(reservationId: string): Promise<Reservation
 
   // Fallback mock if not found in localStorage or for server-side rendering (though this page is client-side)
   if (reservationId === "mock-reservation-123") {
-    const regularFare = 250;
+    const regularFareTotal = 250 * 2; // Example for 2 seats
     const userType: PassengerType = "Student"; 
     const discountApplied = userType === "Student" || userType === "Senior" || userType === "PWD";
     const discountRate = 0.20;
     
-    const amountDueAfterDiscount = discountApplied ? regularFare * (1 - discountRate) * 2 : regularFare * 2; // For 2 seats
+    const amountDueAfterDiscount = discountApplied ? regularFareTotal * (1 - discountRate) : regularFareTotal;
     const amountPaidExample = amountDueAfterDiscount * 0.3; // Example: 30% deposit paid
 
     return {
@@ -49,7 +49,7 @@ async function getReservationDetails(reservationId: string): Promise<Reservation
       selectedDestination: "Cebu City (Default)",
       tripDate: format(new Date(), "yyyy-MM-dd"),
       userType: userType,
-      regularFareTotal: regularFare * 2, 
+      regularFareTotal: regularFareTotal, 
       discountApplied: discountApplied,
       amountDue: amountDueAfterDiscount, // Total after discount
       paymentType: "deposit",
@@ -175,7 +175,7 @@ export default function ReservationReceiptPage() {
   return (
     <div className="container mx-auto py-8 max-w-2xl">
       <header className="text-center mb-8">
-        <Printer className="mx-auto h-12 w-12 text-primary mb-4" />
+        <CheckCircle className="mx-auto h-12 w-12 text-primary mb-4" />
         <h1 className="text-4xl font-bold text-primary-foreground">Reservation Receipt</h1>
         <p className="mt-2 text-lg text-muted-foreground">Thank you for booking with BusQ!</p>
       </header>
@@ -194,10 +194,10 @@ export default function ReservationReceiptPage() {
         <Button 
           variant="outline" 
           size="lg"
-          onClick={() => typeof window !== 'undefined' && window.print()}
+          onClick={() => router.push('/')}
           className="text-accent-foreground border-accent hover:bg-accent/20"
         >
-          <Printer className="mr-2 h-5 w-5" /> Print Receipt
+          Done
         </Button>
       </div>
     </div>
