@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SeatMap } from "@/components/seats/seat-map";
-import { type Trip, type BusType, type TripStatus, type TripDirection, type MantalongonRouteStop, type CebuRouteStop, type PassengerType, type Reservation, passengerTypes } from "@/types";
+import { type Trip, type BusType, type TripStatus, type TripDirection, type MantalongonRouteStop, type CebuRouteStop, type PassengerType, type Reservation, passengerTypes, mantalongonRouteStops, cebuRouteStops } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -57,19 +57,7 @@ const FARE_MATRIX: {
   // Note: For trips from Cebu City, Mantalongon is usually the full route destination.
   // Other stops would be intermediate.
   "Mantalongon": { "Traditional": 180, "Airconditioned": 200 } 
-  // We'll add other Cebu-originating fares here if needed,
-  // or the logic can derive them if symmetric.
-  // For now, the existing matrix for Mantalongon-originating trips covers these points.
-  // If a trip is Cebu City -> Dalaguete, we can use the matrix for Dalaguete.
 };
-
-
-const mantalongonRouteStops: MantalongonRouteStop[] = [
-  "Dalaguete", "Argao", "Sibonga", "Carcar City", "San Fernando", "Naga City", "Minglanilla", "Talisay City", "Cebu City",
-];
-const cebuRouteStops: CebuRouteStop[] = [
-  "Talisay City", "Minglanilla", "Naga City", "San Fernando", "Carcar City", "Sibonga", "Argao", "Dalaguete", "Mantalongon",
-];
 
 
 const generateMockTripsForSeatsPage = (): Trip[] => {
@@ -137,9 +125,9 @@ async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
 }
 
 export default function SeatSelectionPage() {
-  const params = useParams<{ tripId: string }>();
+  const params = useParams();
   const router = useRouter();
-  const tripIdParam = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
+  const tripId = params?.tripId ? (Array.isArray(params.tripId) ? params.tripId[0] : params.tripId) : undefined;
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
@@ -150,21 +138,21 @@ export default function SeatSelectionPage() {
 
   useEffect(() => {
     async function loadTrip() {
-      if (!tripIdParam) {
+      if (!tripId) {
         setTrip(null);
         setLoading(false);
         return;
       }
       setLoading(true);
-      const tripDetails = await getTripDetails(tripIdParam);
+      const tripDetails = await getTripDetails(tripId);
       setTrip(tripDetails);
       if (tripDetails) {
-        setSelectedDropOff(tripDetails.destination); // Default to trip's final destination
+        setSelectedDropOff(tripDetails.destination); 
       }
       setLoading(false);
     }
     loadTrip();
-  }, [tripIdParam]);
+  }, [tripId]);
 
  useEffect(() => {
     if (!trip || !selectedDropOff) {
@@ -175,26 +163,16 @@ export default function SeatSelectionPage() {
     const { busType, price: fullRoutePrice, destination: tripFinalDestination, origin } = trip;
     let fareFromMatrix: number | undefined;
 
-    // Determine which matrix to use or how to look up based on origin
     if (origin === "Mantalongon") {
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
     } else if (origin === "Cebu City") {
-      // For Cebu originating trips, the FARE_MATRIX keys are destinations from Mantalongon
-      // So if selectedDropOff is "Mantalongon", we use that.
-      // If it's an intermediate stop like "Dalaguete", we need to know the fare from Cebu to Dalaguete
-      // For now, we assume the matrix is symmetric or defined for Mantalongon as the reference.
-      // If the stop is in the matrix keys (like "Dalaguete", "Argao", etc.) it implies a Mantalongon-origin fare.
-      // This needs refinement if Cebu->X fares are different from Mantalongon->X
       if (selectedDropOff === "Mantalongon") {
-         fareFromMatrix = FARE_MATRIX["Mantalongon"]?.[busType]; // Full route Cebu -> Mantalongon
+         fareFromMatrix = FARE_MATRIX["Mantalongon"]?.[busType]; 
       } else {
-         // This part needs a clear definition of fares from Cebu to intermediate stops if they are not symmetric
-         // or not covered by the current FARE_MATRIX structure for Mantalongon-origin trips.
-         // For now, let's try to find it as if the stop was a destination from Mantalongon.
          fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
          if (!fareFromMatrix) {
              console.warn(`Fare from Cebu City to "${selectedDropOff}" with ${busType} not explicitly in matrix. Using full route price as fallback.`);
-             fareFromMatrix = fullRoutePrice; // Fallback for unlisted intermediate stops from Cebu
+             fareFromMatrix = fullRoutePrice; 
          }
       }
     }
@@ -247,7 +225,7 @@ export default function SeatSelectionPage() {
     if (!trip) return;
 
     let isUserLoggedIn = false;
-    let passengerName = "Guest User"; // Default passenger name
+    let passengerName = "Guest User"; 
 
     if (typeof window !== 'undefined') {
         const loggedInUser = localStorage.getItem('busqLoggedInUser');
@@ -255,10 +233,9 @@ export default function SeatSelectionPage() {
             isUserLoggedIn = true;
             try {
                 const userData = JSON.parse(loggedInUser);
-                passengerName = userData.name || "Registered User"; // Use stored name
+                passengerName = userData.name || "Registered User"; 
             } catch (e) {
                 console.error("Error parsing logged in user data", e);
-                // Keep passengerName as "Registered User" or a default if parsing fails
             }
         }
     }
@@ -273,7 +250,7 @@ export default function SeatSelectionPage() {
       id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       passengerName: passengerName,
       tripId: trip.id,
-      seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), // Mock seat numbers for now
+      seatNumbers: Array.from({length: selectedSeatsCount}, (_, i) => `S${i+1}`), 
       busType: trip.busType,
       departureTime: trip.departureTime,
       origin: trip.origin,
@@ -283,13 +260,12 @@ export default function SeatSelectionPage() {
       regularFareTotal: regularFareTotalForBooking, 
       discountApplied: discountApplied,
       amountDue: amountDueForBooking, 
-      // paymentType, amountPaid, and finalFarePaid will be set on payment page
-      finalFarePaid: 0, // Initialize, will be updated after payment
+      finalFarePaid: 0, 
     };
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('pendingReservation', JSON.stringify(reservationDataForPayment));
-      window.location.href = '/payment'; // Use window.location for full page reload to ensure localStorage access
+      window.location.href = '/payment'; 
     }
   };
 
@@ -298,7 +274,7 @@ export default function SeatSelectionPage() {
     <div className="container mx-auto py-8">
       <header className="text-center mb-8">
         <Ticket className="mx-auto h-12 w-12 text-primary mb-4" />
-        <h1 className="text-4xl font-bold text-primary-foreground">Select Seats & Passenger Details</h1>
+        <h1 className="text-4xl font-bold text-foreground">Select Seats & Passenger Details</h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Bus Route: {trip.origin} to {trip.destination}.
         </p>
@@ -311,7 +287,7 @@ export default function SeatSelectionPage() {
         <div className="md:col-span-2 space-y-6">
           <Card className="shadow-xl">
             <CardHeader>
-              <CardTitle className="text-2xl text-primary">Bus Layout ({trip.busType})</CardTitle>
+              <CardTitle className="text-2xl text-foreground">Bus Layout ({trip.busType})</CardTitle>
               <CardDescription>Click on available seats to select them. Total seats: {trip.totalSeats}. Seats available: {trip.availableSeats}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -323,7 +299,7 @@ export default function SeatSelectionPage() {
         <div className="md:col-span-1 flex flex-col space-y-6">
           <Card className="shadow-xl">
             <CardHeader>
-              <CardTitle className="text-xl text-primary">Trip & Fare Summary</CardTitle>
+              <CardTitle className="text-xl text-foreground">Trip & Fare Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
@@ -379,7 +355,7 @@ export default function SeatSelectionPage() {
 
           <Card className="shadow-xl">
             <CardHeader>
-                <CardTitle className="text-xl text-primary flex items-center">
+                <CardTitle className="text-xl text-foreground flex items-center">
                     <MapPin className="h-5 w-5 mr-2" /> Select Your Drop-off Point
                 </CardTitle>
             </CardHeader>
@@ -405,7 +381,7 @@ export default function SeatSelectionPage() {
 
            <Card className="shadow-xl">
             <CardHeader>
-                <CardTitle className="text-xl text-primary flex items-center">
+                <CardTitle className="text-xl text-foreground flex items-center">
                     <UserCircle className="h-5 w-5 mr-2" /> Select Passenger Type
                 </CardTitle>
             </CardHeader>
@@ -453,3 +429,5 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
+
+    
