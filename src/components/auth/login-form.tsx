@@ -15,19 +15,21 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Mail, Lock } from "lucide-react";
-import { useState, useEffect } from "react"; // Import useEffect
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useState, useEffect } from "react"; 
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password cannot be empty." }), // Min 1 for pre-filled
+  password: z.string().min(1, { message: "Password cannot be empty." }), 
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -46,7 +48,7 @@ export function LoginForm() {
           if (userData.email) {
             form.setValue('email', userData.email);
           }
-          if (userData.password) { // For mock pre-fill
+          if (userData.password) { 
             form.setValue('password', userData.password);
           }
         } catch (e) {
@@ -58,22 +60,20 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     console.log("Login submitted:", values);
 
     let loginSuccess = false;
+    let userName = "User";
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('busqUser');
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
           if (userData.email === values.email && userData.password === values.password) {
-            // MOCK LOGIN SUCCESS
             loginSuccess = true;
-            localStorage.setItem('busqLoggedInUser', JSON.stringify({ email: values.email, name: userData.name })); // Simulate session
-            alert(`Login Successful! Welcome back, ${userData.name || 'User'}! (Using local data)`);
-            router.push('/'); // Redirect to homepage after successful login
+            userName = userData.name || "User";
+            localStorage.setItem('busqLoggedInUser', JSON.stringify({ email: values.email, name: userName })); 
           }
         } catch (e) {
           console.error("Error during mock login check:", e);
@@ -81,8 +81,18 @@ export function LoginForm() {
       }
     }
 
-    if (!loginSuccess) {
-      alert("Mock Login Failed: Invalid email or password, or no local user found. Please sign up if you haven't.");
+    if (loginSuccess) {
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${userName}!`,
+      });
+      router.push('/'); 
+    } else {
+      toast({
+        title: "Login Failed",
+        description: "Invalid email or password, or no local user found. Please sign up if you haven't.",
+        variant: "destructive",
+      });
     }
     setIsLoading(false);
   }
