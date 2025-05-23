@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Info, CheckCircle } from "lucide-react"; // Added CheckCircle
 import Link from "next/link";
 import { format } from "date-fns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 
 // Mock function to get reservation details - now reads from localStorage
 async function getReservationDetails(reservationId: string): Promise<Reservation | null> {
@@ -182,6 +183,14 @@ export default function ReservationReceiptPage() {
       </header>
       
       <ReceiptDetails reservation={reservation} />
+
+      <Alert variant="default" className="my-6 border-primary/50 bg-primary/10">
+        <Info className="h-5 w-5 text-primary" />
+        <AlertTitle className="text-primary font-semibold">Important Reminder</AlertTitle>
+        <AlertDescription className="text-primary/90">
+          Please download this receipt or take a screenshot as proof of your reservation. You may need to present this upon boarding.
+        </AlertDescription>
+      </Alert>
 
       <div className="mt-8 flex justify-center gap-4">
         <Button 
