@@ -45,7 +45,7 @@ const FARE_MATRIX: {
 const PHYSICAL_BUS_SCHEDULES_SEATS: Array<{
   physicalBusId: PhysicalBusId;
   busType: BusType;
-  mantalongonDepartureTime: string; // HH:mm format
+  mantalongonDepartureTime: string;
 }> = [
   { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45" },
   { physicalBusId: "TRAD-002", busType: "Traditional", mantalongonDepartureTime: "03:20" },
@@ -62,14 +62,14 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
     const today = new Date();
 
     PHYSICAL_BUS_SCHEDULES_SEATS.forEach(busSchedule => {
-        const todayStr = format(today, "yyyy-MM-dd");
         const [hours, minutes] = busSchedule.mantalongonDepartureTime.split(':').map(Number);
-        
         let outboundDepartureDateTime = setHours(setMinutes(setSeconds(setMilliseconds(new Date(today), 0), 0), minutes), hours);
         let outboundArrivalDateTime = dateFnsAddHours(outboundDepartureDateTime, TRAVEL_DURATION_HOURS_SEATS);
 
         const totalSeats = busSchedule.busType === "Airconditioned" ? 65 : 53;
-        const baseAvailableSeats = busSchedule.busType === "Airconditioned" ? (45 + (parseInt(busSchedule.physicalBusId.slice(-3)) % 20)) : (30 + (parseInt(busSchedule.physicalBusId.slice(-3)) % 23));
+        const baseAvailableSeats = busSchedule.busType === "Airconditioned" 
+            ? (45 + (parseInt(busSchedule.physicalBusId.slice(-3), 10) % 20)) 
+            : (30 + (parseInt(busSchedule.physicalBusId.slice(-3), 10) % 23));
         const availableSeatsForType = Math.max(0, Math.min(totalSeats, baseAvailableSeats));
         const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
 
@@ -110,7 +110,7 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
             tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"),
             departureTimestamp: returnDepartureDateTime.getTime(),
             arrivalTimestamp: returnArrivalDateTime.getTime(),
-            availableSeats: availableSeatsForType, // Assuming same availability for simplicity
+            availableSeats: availableSeatsForType, 
             totalSeats: totalSeats,
             busPlateNumber: outboundTripLeg.busPlateNumber,
             travelDurationMins: TRAVEL_DURATION_HOURS_SEATS * 60,
@@ -131,13 +131,9 @@ async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
 
 export default function SeatSelectionPage() {
   const router = useRouter();
-  const routeParams = useParams(); // Use hook for client components
+  const routeParams = useParams<{ tripId: string }>();
   
-  // Extract tripId safely from routeParams
-  let currentTripId: string | undefined;
-  if (routeParams?.tripId) {
-    currentTripId = Array.isArray(routeParams.tripId) ? routeParams.tripId[0] : routeParams.tripId;
-  }
+  const currentTripId = typeof routeParams?.tripId === 'string' ? routeParams.tripId : undefined;
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [displayStatus, setDisplayStatus] = useState<TripStatus>("Scheduled"); 
@@ -146,8 +142,10 @@ export default function SeatSelectionPage() {
   const [loading, setLoading] = useState(true);
   const [selectedSeatsCount, setSelectedSeatsCount] = useState(0);
   const [dynamicRegularFarePerSeat, setDynamicRegularFarePerSeat] = useState<number>(0);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     async function loadTrip() {
       if (!currentTripId) {
         setTrip(null);
@@ -166,17 +164,17 @@ export default function SeatSelectionPage() {
   }, [currentTripId]);
 
   useEffect(() => {
-    if (trip?.departureTimestamp && trip?.arrivalTimestamp) {
+    if (trip?.departureTimestamp && trip?.arrivalTimestamp && isClient) {
         const now = new Date().getTime();
         let newStatus: TripStatus;
         if (now < trip.departureTimestamp) newStatus = "Scheduled";
         else if (now >= trip.departureTimestamp && now < trip.arrivalTimestamp) newStatus = "Travelling";
-        else newStatus = "Parked at Destination"; // Simplified status for seat page based on current leg
+        else newStatus = "Parked at Destination"; 
         setDisplayStatus(newStatus);
-    } else {
-        setDisplayStatus("Scheduled"); // Default if no trip or status info
+    } else if (trip) {
+        setDisplayStatus("Scheduled"); 
     }
-  }, [trip]);
+  }, [trip, isClient]);
 
 
  useEffect(() => {
@@ -191,23 +189,14 @@ export default function SeatSelectionPage() {
     if (origin === "Mantalongon") {
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
     } else if (origin === "Cebu City") {
-      // For Cebu originating trips, the selectedDropOff is towards Mantalongon.
-      // The FARE_MATRIX needs to be keyed by these intermediate stops if different from Mantalongon->Cebu fares.
-      // Assuming symmetric pricing for now, or specific entries for Cebu->Stop.
-      // If your FARE_MATRIX is only Mantalongon->Stop, you might need another matrix or logic.
-      // For this example, let's assume FARE_MATRIX can handle Cebu City to intermediate stops if they exist there.
-      // If not, we need to be more specific. For now, let's use this.
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType]; 
     }
-
 
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
-      // This handles the case where the drop-off is the bus's final destination for that leg
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
-      // Fallback or error if specific intermediate fare not found and it's not the final destination
       console.warn(`Fare not found for destination: "${selectedDropOff}" from "${origin}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
       setDynamicRegularFarePerSeat(fullRoutePrice); 
     }
@@ -226,9 +215,13 @@ export default function SeatSelectionPage() {
   const amountDueForBooking = calculatedFarePerSeat * selectedSeatsCount;
 
 
-  if (loading) {
+  if (loading && !isClient) { // Show loading only on initial server render or if explicitly loading
     return <div className="text-center py-10 text-muted-foreground">Loading trip details...</div>;
   }
+  if (isClient && loading) { // On client, if still loading after mount
+    return <div className="text-center py-10 text-muted-foreground">Loading trip details...</div>;
+  }
+
 
   if (!trip) {
     return (
@@ -243,7 +236,7 @@ export default function SeatSelectionPage() {
     );
   }
 
-  const isBookable = displayStatus === "Scheduled";
+  const isBookable = isClient && displayStatus === "Scheduled";
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
@@ -284,9 +277,9 @@ export default function SeatSelectionPage() {
       regularFareTotal: regularFareTotalForBooking, 
       discountApplied: discountApplied,
       amountDue: amountDueForBooking, 
-      paymentType: undefined, // Will be updated on payment page
-      amountPaid: undefined, // Will be updated on payment page
-      finalFarePaid: 0, // Will be updated on payment page
+      paymentType: undefined, 
+      amountPaid: undefined, 
+      finalFarePaid: 0, 
     };
 
     if (typeof window !== 'undefined') {
@@ -304,7 +297,7 @@ export default function SeatSelectionPage() {
         <p className="mt-2 text-lg text-muted-foreground">
           Bus Route: {trip.origin} to {trip.destination}.
         </p>
-         {!isBookable && (
+         {!isBookable && isClient && (
             <p className="mt-2 text-yellow-500 font-semibold">This trip is currently {displayStatus.toLowerCase()} and not available for booking.</p>
         )}
       </header>
@@ -350,7 +343,7 @@ export default function SeatSelectionPage() {
               </div>
                <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status:</span>
-                <span className="font-semibold">{displayStatus}</span>
+                <span className="font-semibold">{isClient ? displayStatus : "Loading..."}</span>
               </div>
               <Separator className="my-3 bg-border" />
               <div className="flex items-center justify-between">
@@ -458,4 +451,3 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
-
