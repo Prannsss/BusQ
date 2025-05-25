@@ -45,7 +45,7 @@ const generateTodaysTripsForTracking = (): Trip[] => {
       const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
 
       const outboundTripLeg: Trip = {
-          id: `${busSchedule.physicalBusId}-Mantalongon_to_Cebu-${format(outboundDepartureDateTime, "yyyyMMddHHmm")}`,
+          id: `${busSchedule.physicalBusId}-MtoC-${format(outboundDepartureDateTime, "yyyyMMddHHmm")}`,
           physicalBusId: busSchedule.physicalBusId,
           direction: "Mantalongon_to_Cebu",
           origin: "Mantalongon",
@@ -69,7 +69,7 @@ const generateTodaysTripsForTracking = (): Trip[] => {
       let returnArrivalDateTime = dateFnsAddHours(returnDepartureDateTime, TRAVEL_DURATION_HOURS_TRACKING);
 
       const returnTripLeg: Trip = {
-          id: `${busSchedule.physicalBusId}-Cebu_to_Mantalongon-${format(returnDepartureDateTime, "yyyyMMddHHmm")}`,
+          id: `${busSchedule.physicalBusId}-CtoM-${format(returnDepartureDateTime, "yyyyMMddHHmm")}`,
           physicalBusId: busSchedule.physicalBusId,
           direction: "Cebu_to_Mantalongon",
           origin: "Cebu City",
@@ -112,11 +112,10 @@ const getCyclicalBusStatus = (
   let displayMessage = "Bus status initializing...";
 
   if (!mToCLeg) {
-    return { currentStatus: "Parked at Destination", currentOrigin: "Unknown", currentDestination: "Unknown", currentRouteLeg: 'unknown', displayMessage: `No Mantalongon->Cebu schedule found for ${physicalBusId}`, badgeColorKey: "gray" };
+    return { currentStatus: "Completed for Day", currentOrigin: "Unknown", currentDestination: "Unknown", currentRouteLeg: 'unknown', displayMessage: `No Mantalongon->Cebu schedule found for ${physicalBusId}`, badgeColorKey: "gray" };
   }
   if (!cToMLeg) {
-     // This implies it's a one-way service or data error for this prototype's logic
-    return { currentStatus: "Parked at Destination", currentOrigin: mToCLeg.origin, currentDestination: mToCLeg.destination, currentRouteLeg: 'unknown', displayMessage: `No Cebu->Mantalongon return schedule found for ${physicalBusId}`, badgeColorKey: "gray"};
+    return { currentStatus: "Completed for Day", currentOrigin: mToCLeg.origin, currentDestination: mToCLeg.destination, currentRouteLeg: 'unknown', displayMessage: `No Cebu->Mantalongon return schedule found for ${physicalBusId}`, badgeColorKey: "gray"};
   }
 
   const firstLegDep = new Date(mToCLeg.departureTimestamp);
@@ -129,10 +128,6 @@ const getCyclicalBusStatus = (
     let adjustedTime = new Date(eventTime);
     adjustedTime.setFullYear(currentDateTime.getFullYear(), currentDateTime.getMonth(), currentDateTime.getDate());
     if (isBefore(adjustedTime, currentDateTime) && !isEqual(adjustedTime.toDateString(), returnLegArr.toDateString()) ) {
-        // If the event time today is past, and we are not looking at the final arrival which could be today
-        // then assume it's for the next day's cycle for scheduling checks.
-        // This logic is tricky and depends on how far ahead "today" means for currentDateTime
-        // For simplicity, if returnLegArr is already in the past, we assume the whole cycle is for next day.
         if (isBefore(returnLegArr, currentDateTime) && currentDateTime.getHours() > returnLegArr.getHours()) {
              adjustedTime = addDays(adjustedTime, 1);
         }
@@ -203,10 +198,7 @@ const getCyclicalBusStatus = (
 
 export default function TrackingPage() {
   const [allTrips, setAllTrips] = useState<Trip[]>([]);
-  const [selectedOrigin, setSelectedOrigin] = useState<string>("Mantalongon"); // Default to Mantalongon
-  const [availableDepartureTimes, setAvailableDepartureTimes] = useState<Trip[]>([]);
-  const [selectedTripId, setSelectedTripId] = useState<string>(""); // This will store the ID of the selected outbound leg
-  
+  const [selectedTripId, setSelectedTripId] = useState<string>(""); 
   const [detailedBusStatus, setDetailedBusStatus] = useState<CyclicalBusInfo | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -215,21 +207,7 @@ export default function TrackingPage() {
     setAllTrips(generateTodaysTripsForTracking());
   }, []);
 
-  useEffect(() => {
-    // Populate initial departure times based on default selectedOrigin
-    if (allTrips.length > 0) {
-      const filtered = allTrips.filter(trip => trip.origin === selectedOrigin && trip.direction === "Mantalongon_to_Cebu");
-      setAvailableDepartureTimes(filtered);
-      if (filtered.length > 0 && !selectedTripId) {
-         // setSelectedTripId(filtered[0].id); // Optionally auto-select first trip
-      }
-    }
-  }, [selectedOrigin, allTrips, selectedTripId]);
-
-
   const tripToTrackInitialLeg = useMemo(() => {
-    // Find the initial outbound leg (M->C) that the user selected.
-    // The cyclical status will then be derived from this bus's full day schedule.
     return allTrips.find(trip => trip.id === selectedTripId && trip.direction === "Mantalongon_to_Cebu") || null;
   }, [selectedTripId, allTrips]);
 
@@ -244,14 +222,14 @@ export default function TrackingPage() {
       }
     };
     
-    calculateAndSetDetailedStatus(); // Initial calculation
+    calculateAndSetDetailedStatus(); 
     const intervalId = setInterval(() => {
-        setCurrentTime(new Date()); // This will trigger re-calculation if currentTime is a dependency of getCyclicalBusStatus
+        setCurrentTime(new Date()); 
         calculateAndSetDetailedStatus();
-    }, 30000); // Update every 30 seconds
+    }, 30000); 
 
     return () => clearInterval(intervalId);
-  }, [tripToTrackInitialLeg, allTrips]); // Removed currentTime from here, calculation happens inside
+  }, [tripToTrackInitialLeg, allTrips]); 
 
 
   const getDisplayMessage = () => {
@@ -278,15 +256,13 @@ export default function TrackingPage() {
           <CardDescription>Choose the bus based on its first scheduled trip from Mantalongon.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 items-end"> {/* Simplified to one selector */}
+          <div className="grid grid-cols-1 gap-4 items-end"> 
             <div>
               <Label htmlFor="departure-time-select" className="text-muted-foreground">Mantalongon Departure Time</Label>
               <Select 
                 value={selectedTripId} 
                 onValueChange={(value) => {
                   setSelectedTripId(value);
-                  // Optionally reset detailed status here if you want immediate feedback change
-                  // setDetailedBusStatus(null); 
                 }}
               >
                 <SelectTrigger id="departure-time-select" className="w-full bg-input border-border focus:ring-primary">
@@ -294,7 +270,6 @@ export default function TrackingPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-popover">
                   {PHYSICAL_BUS_SCHEDULES_TRACKING.map((sched) => {
-                    // Find the corresponding outbound trip ID for this physical bus schedule
                     const outboundTrip = allTrips.find(t => t.physicalBusId === sched.physicalBusId && t.direction === "Mantalongon_to_Cebu");
                     if (!outboundTrip) return null;
                     return (

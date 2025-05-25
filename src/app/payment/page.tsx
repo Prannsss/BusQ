@@ -1,27 +1,26 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'; // Import React for React.memo
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Reservation } from '@/types';
 import { Armchair, Bus, CalendarDays, Clock, CreditCard, DollarSign, MapPin, Percent, Route, Tag, UserCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useToast } from '@/hooks/use-toast';
 
 export default function PaymentPage() {
   const router = useRouter();
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast(); // Initialize useToast
+  const { toast } = useToast();
 
   useEffect(() => {
     const storedReservation = localStorage.getItem('pendingReservation');
     if (storedReservation) {
       try {
         const parsedReservation: Reservation = JSON.parse(storedReservation);
-        // Ensure all necessary fields are present, or provide defaults
         setReservation({
             ...parsedReservation,
             amountDue: parsedReservation.amountDue || 0,
@@ -29,11 +28,9 @@ export default function PaymentPage() {
         });
       } catch (error) {
         console.error("Error parsing reservation from localStorage:", error);
-        // Handle error, e.g., redirect to trips page or show error message
         router.push('/trips');
       }
     } else {
-      // No pending reservation found, redirect
       router.push('/trips');
     }
     setLoading(false);
@@ -43,7 +40,7 @@ export default function PaymentPage() {
     if (!reservation) return;
 
     let amountToPay = 0;
-    const depositRate = 0.30; // 30%
+    const depositRate = 0.30; 
 
     if (paymentType === "deposit") {
       amountToPay = reservation.amountDue * depositRate;
@@ -51,23 +48,20 @@ export default function PaymentPage() {
       amountToPay = reservation.amountDue;
     }
 
-    // Simulate payment success
     toast({
       title: "Mock Payment Successful!",
       description: `Amount Paid: PHP ${amountToPay.toFixed(2)}\nPayment Type: ${paymentType === "deposit" ? "30% Deposit" : "Full Fare"}`,
     });
-    // alert(`Mock Payment Successful!\nAmount Paid: PHP ${amountToPay.toFixed(2)}\nPayment Type: ${paymentType === "deposit" ? "30% Deposit" : "Full Fare"}`);
-
 
     const confirmedReservation: Reservation = {
       ...reservation,
       paymentType: paymentType,
       amountPaid: amountToPay,
-      finalFarePaid: amountToPay, // Update finalFarePaid to what was actually paid
+      finalFarePaid: amountToPay, 
     };
 
     localStorage.setItem('mockReservationDetails', JSON.stringify(confirmedReservation));
-    localStorage.removeItem('pendingReservation'); // Clean up pending reservation
+    localStorage.removeItem('pendingReservation'); 
     router.push(`/reservations/${confirmedReservation.id}/receipt`);
   };
 
@@ -162,7 +156,7 @@ interface InfoRowProps {
   isLarge?: boolean;
 }
 
-function InfoRow({ icon, label, value, valueClassName, isLarge }: InfoRowProps) {
+const InfoRow = React.memo(function InfoRow({ icon, label, value, valueClassName, isLarge }: InfoRowProps) {
   return (
     <div className={`flex items-center justify-between ${isLarge ? 'text-base' : ''}`}>
       <div className="flex items-center text-muted-foreground">
@@ -172,5 +166,5 @@ function InfoRow({ icon, label, value, valueClassName, isLarge }: InfoRowProps) 
       <span className={`font-semibold text-foreground ${isLarge ? 'text-lg' : ''} ${valueClassName || ''}`}>{value}</span>
     </div>
   );
-}
-
+});
+InfoRow.displayName = 'InfoRow';

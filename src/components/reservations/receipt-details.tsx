@@ -1,4 +1,5 @@
 
+import React from "react"; // Import React for React.memo
 import { Reservation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -8,7 +9,7 @@ interface ReceiptDetailsProps {
   reservation: Reservation;
 }
 
-export function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
+const ReceiptDetails = React.memo(function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
   const discountAmount = reservation.regularFareTotal - reservation.amountDue;
 
   return (
@@ -73,7 +74,8 @@ export function ReceiptDetails({ reservation }: ReceiptDetailsProps) {
       </CardContent>
     </Card>
   );
-}
+});
+ReceiptDetails.displayName = 'ReceiptDetails';
 
 interface InfoRowProps {
   icon: React.ReactNode;
@@ -82,7 +84,7 @@ interface InfoRowProps {
   valueClassName?: string;
 }
 
-function InfoRow({ icon, label, value, valueClassName }: InfoRowProps) {
+const InfoRow = React.memo(function InfoRow({ icon, label, value, valueClassName }: InfoRowProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center text-muted-foreground">
@@ -92,5 +94,7 @@ function InfoRow({ icon, label, value, valueClassName }: InfoRowProps) {
       <span className={`font-semibold text-foreground ${valueClassName || ''}`}>{value}</span>
     </div>
   );
-}
+});
+InfoRow.displayName = 'InfoRow';
 
+export { ReceiptDetails };

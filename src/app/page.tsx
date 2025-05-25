@@ -1,4 +1,5 @@
 
+import React from "react"; // Import React for React.memo
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bus, MapPin, Ticket, ArrowRight, LogIn, UserPlus } from "lucide-react";
@@ -57,7 +58,7 @@ interface FeatureCardProps {
   linkText: string;
 }
 
-function FeatureCard({ icon, title, description, link, linkText }: FeatureCardProps) {
+const FeatureCard = React.memo(function FeatureCard({ icon, title, description, link, linkText }: FeatureCardProps) {
   return (
     <Card className="bg-card border-border shadow-xl hover:shadow-primary/30 transition-shadow duration-300 flex flex-col">
       <CardHeader className="items-center">
@@ -76,4 +77,5 @@ function FeatureCard({ icon, title, description, link, linkText }: FeatureCardPr
       </CardContent>
     </Card>
   );
-}
+});
+FeatureCard.displayName = 'FeatureCard';
