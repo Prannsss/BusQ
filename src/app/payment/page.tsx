@@ -90,7 +90,7 @@ export default function PaymentPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="text-xl font-semibold text-primary-foreground mb-3">Booking Summary</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-3">Booking Summary</h3>
             <div className="space-y-2 text-sm rounded-lg border bg-card-foreground/5 p-4">
               <InfoRow icon={<UserCircle className="h-4 w-4 text-primary" />} label="Passenger" value={reservation.passengerName} />
               <InfoRow icon={<UserCircle className="h-4 w-4 text-primary" />} label="Passenger Type" value={reservation.userType} />
@@ -103,7 +103,7 @@ export default function PaymentPage() {
           </div>
           
           <div>
-            <h3 className="text-xl font-semibold text-primary-foreground mb-3">Fare Details</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-3">Fare Details</h3>
             <div className="space-y-2 text-sm rounded-lg border bg-card-foreground/5 p-4">
               <InfoRow icon={<Tag className="h-4 w-4 text-primary" />} label="Total Regular Fare" value={`PHP ${reservation.regularFareTotal.toFixed(2)}`} />
               {reservation.discountApplied && (
@@ -120,7 +120,7 @@ export default function PaymentPage() {
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-primary-foreground mb-3">Payment Options</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-3">Payment Options</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button 
                 variant="default" 
@@ -133,7 +133,7 @@ export default function PaymentPage() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="w-full py-6 text-base text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground"
+                className="w-full py-6 text-base text-foreground border-accent hover:bg-accent/20 hover:text-accent-foreground"
                 onClick={() => handlePayment("full")}
               >
                 Pay Full Fare <br /> (PHP {reservation.amountDue.toFixed(2)})
