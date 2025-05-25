@@ -48,4 +48,3 @@ cd BusQ
 ---
 ### Install dependencies
 npm install
-
