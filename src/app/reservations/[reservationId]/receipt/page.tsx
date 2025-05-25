@@ -170,7 +170,7 @@ export default function ReservationReceiptPage() {
     return (
       <div className="text-center py-10">
         <Info className="mx-auto h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-2xl font-semibold">Reservation Not Found</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Reservation Not Found</h1>
         <p className="text-muted-foreground">The requested reservation could not be found.</p>
         <Link href="/trips">
           <Button variant="link" className="mt-4 text-primary">Browse Trips</Button>
@@ -183,7 +183,7 @@ export default function ReservationReceiptPage() {
     <div className="container mx-auto py-8 max-w-2xl">
       <header className="text-center mb-8">
         <CheckCircle className="mx-auto h-12 w-12 text-primary mb-4" />
-        <h1 className="text-4xl font-bold text-primary-foreground">Reservation Receipt</h1>
+        <h1 className="text-4xl font-bold text-foreground">Reservation Receipt</h1>
         <p className="mt-2 text-lg text-muted-foreground">Thank you for booking with BusQ!</p>
       </header>
       
