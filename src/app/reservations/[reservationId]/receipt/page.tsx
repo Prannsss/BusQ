@@ -210,7 +210,7 @@ export default function ReservationReceiptPage() {
           variant="outline" 
           size="lg"
           onClick={() => router.push('/')}
-          className="text-primary-foreground border-accent hover:bg-accent/20 hover:text-primary-foreground"
+          className="text-muted-foreground border-accent hover:bg-accent/20 hover:text-accent-foreground"
         >
           Done
         </Button>
