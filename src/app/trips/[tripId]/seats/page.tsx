@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SeatMap } from "@/components/seats/seat-map";
-import { type Trip, type BusType, type TripStatus, type TripDirection, type MantalongonRouteStop, type CebuRouteStop, type PassengerType, type Reservation, passengerTypes, mantalongonRouteStops, cebuRouteStops, PhysicalBusId } from "@/types";
+import type { Trip, BusType, TripStatus, TripDirection, MantalongonRouteStop, CebuRouteStop, PassengerType, Reservation, PhysicalBusId } from "@/types"; // Added PhysicalBusId
+import { passengerTypes, mantalongonRouteStops, cebuRouteStops } from "@/types"; // Import enums/constants
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -46,15 +47,16 @@ const PHYSICAL_BUS_SCHEDULES_SEATS: Array<{
   physicalBusId: PhysicalBusId;
   busType: BusType;
   mantalongonDepartureTime: string;
+  busPlateNumber: string;
 }> = [
-  { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45" },
-  { physicalBusId: "TRAD-002", busType: "Traditional", mantalongonDepartureTime: "03:20" },
-  { physicalBusId: "TRAD-003", busType: "Traditional", mantalongonDepartureTime: "04:00" },
-  { physicalBusId: "TRAD-004", busType: "Traditional", mantalongonDepartureTime: "05:30" },
-  { physicalBusId: "AC-001",   busType: "Airconditioned", mantalongonDepartureTime: "08:00" },
-  { physicalBusId: "TRAD-005", busType: "Traditional", mantalongonDepartureTime: "11:30" },
-  { physicalBusId: "TRAD-006", busType: "Traditional", mantalongonDepartureTime: "12:00" },
-  { physicalBusId: "TRAD-007", busType: "Traditional", mantalongonDepartureTime: "13:00" },
+  { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45", busPlateNumber: "BUS-MTC-0245" },
+  { physicalBusId: "TRAD-002", busType: "Traditional", mantalongonDepartureTime: "03:20", busPlateNumber: "BUS-MTC-0320" },
+  { physicalBusId: "TRAD-003", busType: "Traditional", mantalongonDepartureTime: "04:00", busPlateNumber: "BUS-MTC-0400" },
+  { physicalBusId: "TRAD-004", busType: "Traditional", mantalongonDepartureTime: "05:30", busPlateNumber: "BUS-MTC-0530" },
+  { physicalBusId: "AC-001",   busType: "Airconditioned", mantalongonDepartureTime: "08:00", busPlateNumber: "BUS-MTC-0800-AC" },
+  { physicalBusId: "TRAD-005", busType: "Traditional", mantalongonDepartureTime: "11:30", busPlateNumber: "BUS-MTC-1130" },
+  { physicalBusId: "TRAD-006", busType: "Traditional", mantalongonDepartureTime: "12:00", busPlateNumber: "BUS-MTC-1200" },
+  { physicalBusId: "TRAD-007", busType: "Traditional", mantalongonDepartureTime: "13:00", busPlateNumber: "BUS-MTC-1300" },
 ];
 
 const generateMockTripsForSeatsPage = (): Trip[] => {
@@ -67,14 +69,19 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
         let outboundArrivalDateTime = dateFnsAddHours(outboundDepartureDateTime, TRAVEL_DURATION_HOURS_SEATS);
 
         const totalSeats = busSchedule.busType === "Airconditioned" ? 65 : 53;
+         // Make available seats deterministic based on physicalBusId and current minute for slight variation
+        const currentMinute = new Date().getMinutes();
+        const busNumericId = parseInt(busSchedule.physicalBusId.replace(/[^0-9]/g, ''), 10) || 1;
         const baseAvailableSeats = busSchedule.busType === "Airconditioned" 
-            ? (45 + (parseInt(busSchedule.physicalBusId.slice(-3), 10) % 20)) 
-            : (30 + (parseInt(busSchedule.physicalBusId.slice(-3), 10) % 23));
-        const availableSeatsForType = Math.max(0, Math.min(totalSeats, baseAvailableSeats));
-        const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
+            ? (45 + (busNumericId % 20) - (currentMinute % 5)) // Example: 45-64, varies slightly by minute
+            : (30 + (busNumericId % 23) - (currentMinute % 5)); // Example: 30-52, varies slightly by minute
+        const availableSeatsForType = Math.max(5, Math.min(totalSeats, baseAvailableSeats)); // Ensure at least 5 seats, max totalSeats
+
+
+        const outboundPrice = busSchedule.busType === "Airconditioned" ? 200 : 180;
 
         const outboundTripLeg: Trip = {
-            id: `${busSchedule.physicalBusId}-Mantalongon_to_Cebu-${format(outboundDepartureDateTime, "yyyyMMddHHmm")}`,
+            id: `${busSchedule.physicalBusId}-MtoC-${format(outboundDepartureDateTime, "yyyyMMddHHmm")}`, // Consistent ID
             physicalBusId: busSchedule.physicalBusId,
             direction: "Mantalongon_to_Cebu",
             origin: "Mantalongon",
@@ -82,13 +89,13 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
             departureTime: busSchedule.mantalongonDepartureTime,
             arrivalTime: format(outboundArrivalDateTime, "HH:mm"),
             busType: busSchedule.busType,
-            price: price,
+            price: outboundPrice,
             tripDate: format(outboundDepartureDateTime, "yyyy-MM-dd"),
             departureTimestamp: outboundDepartureDateTime.getTime(),
             arrivalTimestamp: outboundArrivalDateTime.getTime(),
             availableSeats: availableSeatsForType,
             totalSeats: totalSeats,
-            busPlateNumber: `BUS-${busSchedule.physicalBusId.slice(-3)}`,
+            busPlateNumber: busSchedule.busPlateNumber,
             travelDurationMins: TRAVEL_DURATION_HOURS_SEATS * 60,
             stopoverDurationMins: PARK_DURATION_HOURS_SEATS * 60,
         };
@@ -96,9 +103,10 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
 
         let returnDepartureDateTime = dateFnsAddHours(outboundArrivalDateTime, PARK_DURATION_HOURS_SEATS);
         let returnArrivalDateTime = dateFnsAddHours(returnDepartureDateTime, TRAVEL_DURATION_HOURS_SEATS);
+        const returnPrice = busSchedule.busType === "Airconditioned" ? 200 : 180; // Symmetric pricing
 
         const returnTripLeg: Trip = {
-            id: `${busSchedule.physicalBusId}-Cebu_to_Mantalongon-${format(returnDepartureDateTime, "yyyyMMddHHmm")}`,
+            id: `${busSchedule.physicalBusId}-CtoM-${format(returnDepartureDateTime, "yyyyMMddHHmm")}`, // Consistent ID
             physicalBusId: busSchedule.physicalBusId,
             direction: "Cebu_to_Mantalongon",
             origin: "Cebu City",
@@ -106,13 +114,13 @@ const generateMockTripsForSeatsPage = (): Trip[] => {
             departureTime: format(returnDepartureDateTime, "HH:mm"),
             arrivalTime: format(returnArrivalDateTime, "HH:mm"),
             busType: busSchedule.busType,
-            price: price,
+            price: returnPrice,
             tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"),
             departureTimestamp: returnDepartureDateTime.getTime(),
             arrivalTimestamp: returnArrivalDateTime.getTime(),
             availableSeats: availableSeatsForType, 
             totalSeats: totalSeats,
-            busPlateNumber: outboundTripLeg.busPlateNumber,
+            busPlateNumber: busSchedule.busPlateNumber,
             travelDurationMins: TRAVEL_DURATION_HOURS_SEATS * 60,
             stopoverDurationMins: PARK_DURATION_HOURS_SEATS * 60,
         };
@@ -133,7 +141,10 @@ export default function SeatSelectionPage() {
   const router = useRouter();
   const routeParams = useParams<{ tripId: string }>();
   
-  const currentTripId = typeof routeParams?.tripId === 'string' ? routeParams.tripId : undefined;
+  let currentTripId: string | undefined;
+  if (routeParams?.tripId) {
+    currentTripId = Array.isArray(routeParams.tripId) ? routeParams.tripId[0] : routeParams.tripId;
+  }
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [displayStatus, setDisplayStatus] = useState<TripStatus>("Scheduled"); 
@@ -186,18 +197,26 @@ export default function SeatSelectionPage() {
     const { busType, price: fullRoutePrice, destination: tripFinalDestination, origin } = trip;
     let fareFromMatrix: number | undefined;
 
+    // Use the origin of the trip to determine which part of the matrix to check
     if (origin === "Mantalongon") {
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
     } else if (origin === "Cebu City") {
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType]; 
+    } else {
+      // If origin is not Mantalongon or Cebu City (e.g. an intermediate stop, though not supported by current trip generation)
+      // we'd need more complex fare logic. For now, this handles the two primary origins.
+      console.warn(`Fare matrix lookup for origin "${origin}" is not fully implemented. Selected drop-off: "${selectedDropOff}"`);
     }
+
 
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
+      // If the selected drop-off is the trip's hardcoded final destination, use the trip's base price
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
-      console.warn(`Fare not found for destination: "${selectedDropOff}" from "${origin}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
+      // Fallback or error handling if a fare isn't found and it's not the final destination
+      console.warn(`Fare not found in FARE_MATRIX for destination: "${selectedDropOff}" from "${origin}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
       setDynamicRegularFarePerSeat(fullRoutePrice); 
     }
   }, [trip, selectedDropOff]);
@@ -429,7 +448,7 @@ export default function SeatSelectionPage() {
             </CardContent>
           </Card>
           
-          <div className="space-y-2">
+          <div className="space-y-2"> {/* Removed mt-auto and pt-6 here */}
             <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
                 disabled={!isBookable || !selectedDropOff || selectedSeatsCount === 0 || !trip}
@@ -451,3 +470,4 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
+
