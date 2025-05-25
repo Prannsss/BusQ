@@ -1,1 +1,0 @@
-This is a project that would help commuters of Mantalongon, Dalaguete, Cebu have a seamless experience when commuting using the El-Joesur Highlander Transit buses

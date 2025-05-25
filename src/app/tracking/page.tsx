@@ -9,18 +9,15 @@ import { MapPin, Clock, Loader2 } from "lucide-react";
 import type { Trip, BusType, TripDirection, TripStatus, PhysicalBusId, CyclicalBusInfo, CurrentRouteLeg, BadgeColorKey } from "@/types";
 import { format, addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, addHours as dateFnsAddHours, parseISO, isBefore, isAfter, isEqual, addDays } from 'date-fns';
 
-// Lazy load the BusMap component
 const BusMap = lazy(() => import('@/components/tracking/bus-map').then(module => ({ default: module.BusMap })));
-
 
 const TRAVEL_DURATION_HOURS_TRACKING = 4;
 const PARK_DURATION_HOURS_TRACKING = 1;
 
-// Define the 8 physical buses and their initial Mantalongon departure time
 const PHYSICAL_BUS_SCHEDULES_TRACKING: Array<{
   physicalBusId: PhysicalBusId;
   busType: BusType;
-  mantalongonDepartureTime: string; // HH:mm format
+  mantalongonDepartureTime: string; 
   busPlateNumber: string; 
 }> = [
   { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45", busPlateNumber: "BUS-MTC-0245" },
@@ -33,10 +30,9 @@ const PHYSICAL_BUS_SCHEDULES_TRACKING: Array<{
   { physicalBusId: "TRAD-007", busType: "Traditional", mantalongonDepartureTime: "13:00", busPlateNumber: "BUS-MTC-1300" },
 ];
 
-
 const generateTodaysTripsForTracking = (): Trip[] => {
   const allTripLegs: Trip[] = [];
-  const today = new Date();
+  const today = new Date(); // "Today" is determined when the module loads
 
   PHYSICAL_BUS_SCHEDULES_TRACKING.forEach(busSchedule => {
       const [hours, minutes] = busSchedule.mantalongonDepartureTime.split(':').map(Number);
@@ -45,13 +41,11 @@ const generateTodaysTripsForTracking = (): Trip[] => {
       let outboundArrivalDateTime = dateFnsAddHours(outboundDepartureDateTime, TRAVEL_DURATION_HOURS_TRACKING);
 
       const totalSeats = busSchedule.busType === "Airconditioned" ? 65 : 53;
-      const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
-      // Deterministic available seats
       const busNumericId = parseInt(busSchedule.physicalBusId.replace(/[^0-9]/g, ''), 10) || 1;
-      const baseAvailableSeats = busSchedule.busType === "Airconditioned" 
+      const availableSeatsForType = busSchedule.busType === "Airconditioned" 
           ? (40 + (busNumericId % 25)) 
           : (25 + (busNumericId % 28));
-      const availableSeatsForType = Math.max(5, Math.min(totalSeats, baseAvailableSeats));
+      const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
 
 
       const outboundTripLeg: Trip = {
@@ -67,7 +61,7 @@ const generateTodaysTripsForTracking = (): Trip[] => {
           tripDate: format(outboundDepartureDateTime, "yyyy-MM-dd"),
           departureTimestamp: outboundDepartureDateTime.getTime(),
           arrivalTimestamp: outboundArrivalDateTime.getTime(),
-          availableSeats: availableSeatsForType, 
+          availableSeats: Math.min(totalSeats, Math.max(5, availableSeatsForType)), 
           totalSeats: totalSeats,
           busPlateNumber: busSchedule.busPlateNumber,
           travelDurationMins: TRAVEL_DURATION_HOURS_TRACKING * 60,
@@ -91,7 +85,7 @@ const generateTodaysTripsForTracking = (): Trip[] => {
           tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"),
           departureTimestamp: returnDepartureDateTime.getTime(),
           arrivalTimestamp: returnArrivalDateTime.getTime(),
-          availableSeats: availableSeatsForType,
+          availableSeats: Math.min(totalSeats, Math.max(5, availableSeatsForType)),
           totalSeats: totalSeats,
           busPlateNumber: busSchedule.busPlateNumber,
           travelDurationMins: TRAVEL_DURATION_HOURS_TRACKING * 60,
@@ -103,6 +97,9 @@ const generateTodaysTripsForTracking = (): Trip[] => {
   allTripLegs.sort((a, b) => a.departureTimestamp - b.departureTimestamp);
   return allTripLegs;
 };
+
+const ALL_TRIPS_FOR_TRACKING_TODAY = generateTodaysTripsForTracking();
+
 
 const getCyclicalBusStatus = (
   physicalBusId: PhysicalBusId,
@@ -126,81 +123,66 @@ const getCyclicalBusStatus = (
   if (!mToCLeg) {
     return { currentStatus: "Completed for Day", currentOrigin: "Unknown", currentDestination: "Unknown", currentRouteLeg: 'unknown', displayMessage: `No Mantalongon->Cebu schedule found for ${physicalBusId}`, badgeColorKey: "gray" };
   }
-  if (!cToMLeg) { // This case might be valid if a bus only does one leg a day and parks.
-                 // For this cyclical logic, we assume it aims for a round trip.
+  if (!cToMLeg) { 
     return { currentStatus: "Completed for Day", currentOrigin: mToCLeg.origin, currentDestination: mToCLeg.destination, currentRouteLeg: 'unknown', displayMessage: `No Cebu->Mantalongon return schedule found for ${physicalBusId}`, badgeColorKey: "gray"};
   }
 
-  const firstLegDep = new Date(mToCLeg.departureTimestamp);
-  const firstLegArr = new Date(mToCLeg.arrivalTimestamp);
-  const returnLegDep = new Date(cToMLeg.departureTimestamp);
-  const returnLegArr = new Date(cToMLeg.arrivalTimestamp);
+  // Ensure timestamps are treated as belonging to the "current operational day cycle"
+  const todayDate = new Date(currentDateTime);
   
-  // Adjust dates to today/tomorrow if needed for comparison
-  const adjustToCurrentCycle = (eventTime: Date, baseTime: Date = currentDateTime): Date => {
-    let adjustedTime = new Date(eventTime);
-    adjustedTime.setFullYear(baseTime.getFullYear(), baseTime.getMonth(), baseTime.getDate());
-
-    // If the adjusted event time is in the past relative to current time, 
-    // and we are not already in the 'Completed for Day' phase for today,
-    // consider if this event should be for the next day's cycle.
-    // This is a simplified daily cycle logic.
-    if (isBefore(adjustedTime, baseTime) && !isEqual(adjustedTime.toDateString(), returnLegArr.toDateString()) ) {
-        // If current time is already past today's final arrival, and the event is for a time earlier than that,
-        // it's likely for the next day.
-        if (isAfter(baseTime, returnLegArr) && isBefore(adjustedTime, returnLegArr)) {
-             adjustedTime = addDays(adjustedTime, 1);
-        }
-    }
-    return adjustedTime;
+  const makeDateForToday = (timeString: string, baseDateRef: Date) => {
+      const [h, m] = timeString.split(':').map(Number);
+      return setHours(setMinutes(setSeconds(setMilliseconds(new Date(baseDateRef),0),0),m),h);
   };
 
-  // Create date objects for today's cycle based on current time
-  const todayFirstLegDep = adjustToCurrentCycle(firstLegDep);
-  const todayFirstLegArr = adjustToCurrentCycle(firstLegArr);
-  const todayReturnLegDep = adjustToCurrentCycle(returnLegDep);
-  const todayReturnLegArr = adjustToCurrentCycle(returnLegArr);
+  let firstLegDepDateTime = makeDateForToday(mToCLeg.departureTime, todayDate);
+  if (isBefore(firstLegDepDateTime, todayDate) && Math.abs(firstLegDepDateTime.getTime() - todayDate.getTime()) > 12 * 60 * 60 * 1000) { // If it's an early AM trip and we are in late PM
+      firstLegDepDateTime = addDays(firstLegDepDateTime, 1);
+  }
+  const firstLegArrDateTime = addHours(firstLegDepDateTime, TRAVEL_DURATION_HOURS_TRACKING);
+  const returnLegDepDateTime = addHours(firstLegArrDateTime, PARK_DURATION_HOURS_TRACKING);
+  const returnLegArrDateTime = addHours(returnLegDepDateTime, TRAVEL_DURATION_HOURS_TRACKING);
 
 
-  if (isBefore(currentDateTime, todayFirstLegDep)) {
-    status = "Scheduled";
+  if (isBefore(currentDateTime, firstLegDepDateTime)) {
+    status = "Scheduled"; // For first leg
     currentOrigin = mToCLeg.origin;
     currentDestination = mToCLeg.destination;
-    currentLeg = 'first-leg'; // Will depart for first leg
+    currentLeg = 'first-leg'; 
     badgeColor = "blue";
-    nextStatusChangeAt = todayFirstLegDep;
+    nextStatusChangeAt = firstLegDepDateTime;
     displayMessage = `Bus ${currentBusPlate} is scheduled to depart ${currentOrigin} at ${mToCLeg.departureTime}.`;
-  } else if (isBefore(currentDateTime, todayFirstLegArr)) {
-    status = "Travelling";
+  } else if (isBefore(currentDateTime, firstLegArrDateTime)) {
+    status = "Travelling"; // First leg
     currentOrigin = mToCLeg.origin;
     currentDestination = mToCLeg.destination;
     currentLeg = 'first-leg';
     badgeColor = "green";
-    nextStatusChangeAt = todayFirstLegArr;
+    nextStatusChangeAt = firstLegArrDateTime;
     displayMessage = `Bus ${currentBusPlate} is travelling from ${currentOrigin} to ${currentDestination}. Expected arrival: ${mToCLeg.arrivalTime}.`;
-  } else if (isBefore(currentDateTime, todayReturnLegDep)) {
+  } else if (isBefore(currentDateTime, returnLegDepDateTime)) {
     status = "Parked at Destination"; // Parked at Cebu
     currentOrigin = mToCLeg.destination; 
-    currentDestination = cToMLeg.destination; // Next destination is Mantalongon
+    currentDestination = cToMLeg.destination; 
     currentLeg = 'parked-at-destination';
     badgeColor = "yellow";
-    nextStatusChangeAt = todayReturnLegDep;
+    nextStatusChangeAt = returnLegDepDateTime;
     displayMessage = `Bus ${currentBusPlate} is parked at ${currentOrigin}. Next departure to ${currentDestination} at ${cToMLeg.departureTime}.`;
-  } else if (isBefore(currentDateTime, todayReturnLegArr)) {
-    status = "Returning";
+  } else if (isBefore(currentDateTime, returnLegArrDateTime)) {
+    status = "Returning"; // Return leg
     currentOrigin = cToMLeg.origin;
     currentDestination = cToMLeg.destination;
     currentLeg = 'return-leg';
     badgeColor = "orange";
-    nextStatusChangeAt = todayReturnLegArr;
+    nextStatusChangeAt = returnLegArrDateTime;
     displayMessage = `Bus ${currentBusPlate} is returning from ${currentOrigin} to ${currentDestination}. Expected arrival: ${cToMLeg.arrivalTime}.`;
   } else {
     status = "Completed for Day";
-    currentOrigin = cToMLeg.destination; // Parked at Mantalongon
-    currentDestination = mToCLeg.destination; // Next day starts towards Cebu for mToCLeg
+    currentOrigin = cToMLeg.destination; 
+    currentDestination = mToCLeg.destination; 
     currentLeg = 'parked-at-origin';
     badgeColor = "gray";
-    const nextDayFirstLegDep = addDays(todayFirstLegDep,1); // Next departure is the *first leg's* departure time tomorrow
+    const nextDayFirstLegDep = addDays(firstLegDepDateTime,1); 
     nextStatusChangeAt = nextDayFirstLegDep;
     displayMessage = `Bus ${currentBusPlate} has completed its trips for the day. Parked at ${currentOrigin}. Next scheduled departure for ${currentDestination} is ${mToCLeg.departureTime} tomorrow.`;
   }
@@ -218,41 +200,34 @@ const getCyclicalBusStatus = (
 
 
 export default function TrackingPage() {
-  const [allTrips, setAllTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string>(""); 
   const [detailedBusStatus, setDetailedBusStatus] = useState<CyclicalBusInfo | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date()); // For forcing re-renders
+  const [currentTimeForEffect, setCurrentTimeForEffect] = useState(new Date());
 
-
-  useEffect(() => {
-    setAllTrips(generateTodaysTripsForTracking());
-  }, []);
 
   const tripToTrackInitialLeg = useMemo(() => {
-    // Find the *first leg* (Mantalongon to Cebu) of the selected physical bus
-    // The selectedTripId corresponds to one of the initial outbound legs displayed in the dropdown
-    return allTrips.find(trip => trip.id === selectedTripId && trip.direction === "Mantalongon_to_Cebu") || null;
-  }, [selectedTripId, allTrips]);
+    return ALL_TRIPS_FOR_TRACKING_TODAY.find(trip => trip.id === selectedTripId && trip.direction === "Mantalongon_to_Cebu") || null;
+  }, [selectedTripId]);
 
 
   useEffect(() => {
     const calculateAndSetDetailedStatus = () => {
-      if (tripToTrackInitialLeg && tripToTrackInitialLeg.physicalBusId && allTrips.length > 0) {
-        const statusInfo = getCyclicalBusStatus(tripToTrackInitialLeg.physicalBusId, allTrips, new Date());
+      if (tripToTrackInitialLeg && tripToTrackInitialLeg.physicalBusId && ALL_TRIPS_FOR_TRACKING_TODAY.length > 0) {
+        const statusInfo = getCyclicalBusStatus(tripToTrackInitialLeg.physicalBusId, ALL_TRIPS_FOR_TRACKING_TODAY, new Date());
         setDetailedBusStatus(statusInfo);
       } else {
         setDetailedBusStatus(null);
       }
     };
     
-    calculateAndSetDetailedStatus(); // Initial calculation
+    calculateAndSetDetailedStatus(); 
     const intervalId = setInterval(() => {
-        setCurrentTime(new Date()); // Update current time to trigger re-calculation if needed
+        setCurrentTimeForEffect(new Date()); 
         calculateAndSetDetailedStatus();
-    }, 30000); // Re-calculate every 30 seconds
+    }, 30000); 
 
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [tripToTrackInitialLeg, allTrips]); // Re-run if the selected bus or the list of all trips changes
+    return () => clearInterval(intervalId); 
+  }, [tripToTrackInitialLeg]); 
 
 
   const getDisplayMessage = () => {
@@ -261,8 +236,6 @@ export default function TrackingPage() {
     return detailedBusStatus.displayMessage;
   };
   
-  // Use the plate number from the *initially selected outbound leg* for the BusMap
-  // The BusMap itself doesn't need to know the bus's current cyclical leg, just its physical ID.
   const busPlateForMap = tripToTrackInitialLeg?.busPlateNumber || "default-bus-id";
 
   return (
@@ -286,19 +259,15 @@ export default function TrackingPage() {
               <Label htmlFor="departure-time-select" className="text-muted-foreground">Mantalongon Departure Time</Label>
               <Select 
                 value={selectedTripId} 
-                onValueChange={(value) => {
-                  setSelectedTripId(value);
-                  // When selection changes, detailedBusStatus will be recalculated by its useEffect
-                }}
+                onValueChange={setSelectedTripId}
               >
                 <SelectTrigger id="departure-time-select" className="w-full bg-input border-border focus:ring-primary">
                   <SelectValue placeholder="Select departure time from Mantalongon" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-popover">
                   {PHYSICAL_BUS_SCHEDULES_TRACKING.map((sched) => {
-                    // Find the outbound trip ID corresponding to this physical bus schedule entry
-                    const outboundTrip = allTrips.find(t => t.physicalBusId === sched.physicalBusId && t.direction === "Mantalongon_to_Cebu");
-                    if (!outboundTrip) return null; // Should ideally not happen if allTrips is generated correctly
+                    const outboundTrip = ALL_TRIPS_FOR_TRACKING_TODAY.find(t => t.physicalBusId === sched.physicalBusId && t.direction === "Mantalongon_to_Cebu");
+                    if (!outboundTrip) return null;
                     return (
                       <SelectItem key={outboundTrip.id} value={outboundTrip.id}>
                         {outboundTrip.departureTime} ({outboundTrip.busType}) - Plate: {outboundTrip.busPlateNumber}
@@ -335,4 +304,3 @@ export default function TrackingPage() {
     </div>
   );
 }
-
