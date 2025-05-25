@@ -1,5 +1,1 @@
-# Firebase Studio
-
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+This is a project that would help commuters of Mantalongon, Dalaguete, Cebu have a seamless experience when commuting using the El-Joesur Highlander Transit buses
