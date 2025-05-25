@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { SeatMap } from "@/components/seats/seat-map";
-import { type Trip, type BusType, type TripStatus, type TripDirection, type MantalongonRouteStop, type CebuRouteStop, type PassengerType, type Reservation, passengerTypes, mantalongonRouteStops, cebuRouteStops } from "@/types";
+import { type Trip, type BusType, type TripStatus, type TripDirection, type MantalongonRouteStop, type CebuRouteStop, type PassengerType, type Reservation, passengerTypes, mantalongonRouteStops, cebuRouteStops, PhysicalBusId } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,26 +17,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Armchair, Ticket, Calendar, Clock, Info, Route, Tag, MapPin, UserCircle, UploadCloud, Percent } from "lucide-react";
 import Link from "next/link";
-import { format, addMinutes, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
+import { format, addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, addHours as dateFnsAddHours, parse } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// Fixed Schedule Configuration (copied for consistency, ideally from a shared source)
-const FIXED_SCHEDULE_A_TO_B_SEATS: Array<{ time: string; busType: BusType }> = [
-    { time: "02:45", busType: "Traditional" }, { time: "03:20", busType: "Traditional" },
-    { time: "04:00", busType: "Traditional" }, { time: "05:30", busType: "Traditional" },
-    { time: "08:00", busType: "Airconditioned" }, { time: "11:30", busType: "Traditional" },
-    { time: "12:00", busType: "Traditional" }, { time: "13:00", busType: "Traditional" },
-  ];
-
-const FIXED_SCHEDULE_B_TO_A_SEATS: Array<{ time: string; busType: BusType }> = [
-    { time: "07:00", busType: "Traditional" }, { time: "08:00", busType: "Traditional" },
-    { time: "09:00", busType: "Traditional" }, { time: "12:00", busType: "Traditional" },
-    { time: "13:00", busType: "Airconditioned" }, { time: "17:00", busType: "Traditional" },
-    { time: "18:00", busType: "Traditional" },
-];
-
-const TRAVEL_DURATION_MINS_SEATS = 240;
-const STOPOVER_DURATION_MINS_SEATS = 60;
+const TRAVEL_DURATION_HOURS_SEATS = 4;
+const PARK_DURATION_HOURS_SEATS = 1;
 
 const FARE_MATRIX: {
   [destination: string]: {
@@ -57,90 +42,105 @@ const FARE_MATRIX: {
   "Mantalongon": { "Traditional": 180, "Airconditioned": 200 } 
 };
 
+const PHYSICAL_BUS_SCHEDULES_SEATS: Array<{
+  physicalBusId: PhysicalBusId;
+  busType: BusType;
+  mantalongonDepartureTime: string; // HH:mm format
+}> = [
+  { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45" },
+  { physicalBusId: "TRAD-002", busType: "Traditional", mantalongonDepartureTime: "03:20" },
+  { physicalBusId: "TRAD-003", busType: "Traditional", mantalongonDepartureTime: "04:00" },
+  { physicalBusId: "TRAD-004", busType: "Traditional", mantalongonDepartureTime: "05:30" },
+  { physicalBusId: "AC-001",   busType: "Airconditioned", mantalongonDepartureTime: "08:00" },
+  { physicalBusId: "TRAD-005", busType: "Traditional", mantalongonDepartureTime: "11:30" },
+  { physicalBusId: "TRAD-006", busType: "Traditional", mantalongonDepartureTime: "12:00" },
+  { physicalBusId: "TRAD-007", busType: "Traditional", mantalongonDepartureTime: "13:00" },
+];
 
 const generateMockTripsForSeatsPage = (): Trip[] => {
+    const allTripLegs: Trip[] = [];
     const today = new Date();
-    const todayStr = format(today, "yyyy-MM-dd");
-    const allTrips: Trip[] = [];
-    let tripIdCounter = 1;
 
-    const createTripForSeatsPage = (
-      departureTimeStr: string,
-      busType: BusType,
-      direction: TripDirection,
-      origin: string,
-      finalDestination: string,
-      currentTripId: number
-    ): Trip => {
-      const [hours, minutes] = departureTimeStr.split(':').map(Number);
-      
-      let departureDateTime = setHours(today, hours);
-      departureDateTime = setMinutes(departureDateTime, minutes);
-      departureDateTime = setSeconds(departureDateTime, 0);
-      departureDateTime = setMilliseconds(departureDateTime, 0);
+    PHYSICAL_BUS_SCHEDULES_SEATS.forEach(busSchedule => {
+        const todayStr = format(today, "yyyy-MM-dd");
+        const [hours, minutes] = busSchedule.mantalongonDepartureTime.split(':').map(Number);
+        
+        let outboundDepartureDateTime = setHours(setMinutes(setSeconds(setMilliseconds(new Date(today), 0), 0), minutes), hours);
+        let outboundArrivalDateTime = dateFnsAddHours(outboundDepartureDateTime, TRAVEL_DURATION_HOURS_SEATS);
 
-      const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS_SEATS);
-      const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-      
-      const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
-      const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
+        const totalSeats = busSchedule.busType === "Airconditioned" ? 65 : 53;
+        const baseAvailableSeats = busSchedule.busType === "Airconditioned" ? (45 + (parseInt(busSchedule.physicalBusId.slice(-3)) % 20)) : (30 + (parseInt(busSchedule.physicalBusId.slice(-3)) % 23));
+        const availableSeatsForType = Math.max(0, Math.min(totalSeats, baseAvailableSeats));
+        const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
 
-      const finalPrice = busType === "Airconditioned" ? 200 : 180;
+        const outboundTripLeg: Trip = {
+            id: `${busSchedule.physicalBusId}-Mantalongon_to_Cebu-${format(outboundDepartureDateTime, "yyyyMMddHHmm")}`,
+            physicalBusId: busSchedule.physicalBusId,
+            direction: "Mantalongon_to_Cebu",
+            origin: "Mantalongon",
+            destination: "Cebu City",
+            departureTime: busSchedule.mantalongonDepartureTime,
+            arrivalTime: format(outboundArrivalDateTime, "HH:mm"),
+            busType: busSchedule.busType,
+            price: price,
+            tripDate: format(outboundDepartureDateTime, "yyyy-MM-dd"),
+            departureTimestamp: outboundDepartureDateTime.getTime(),
+            arrivalTimestamp: outboundArrivalDateTime.getTime(),
+            availableSeats: availableSeatsForType,
+            totalSeats: totalSeats,
+            busPlateNumber: `BUS-${busSchedule.physicalBusId.slice(-3)}`,
+            travelDurationMins: TRAVEL_DURATION_HOURS_SEATS * 60,
+            stopoverDurationMins: PARK_DURATION_HOURS_SEATS * 60,
+        };
+        allTripLegs.push(outboundTripLeg);
 
-      return {
-        id: `trip-${currentTripId}`, busId: `bus-${currentTripId % 5}`, direction, origin,
-        destination: finalDestination,
-        departureTime: departureTimeStr, arrivalTime: format(arrivalDateTime, "HH:mm"),
-        travelDurationMins: TRAVEL_DURATION_MINS_SEATS, stopoverDurationMins: STOPOVER_DURATION_MINS_SEATS,
-        busType: busType,
-        availableSeats: availableSeatsForType,
-        totalSeats: totalSeatsForType,
-        price: finalPrice, 
-        tripDate: todayStr, 
-        // status will be derived client-side based on timestamps
-        departureTimestamp: departureDateTime.getTime(),
-        arrivalTimestamp: arrivalDateTime.getTime(),
-      };
-    };
+        let returnDepartureDateTime = dateFnsAddHours(outboundArrivalDateTime, PARK_DURATION_HOURS_SEATS);
+        let returnArrivalDateTime = dateFnsAddHours(returnDepartureDateTime, TRAVEL_DURATION_HOURS_SEATS);
 
-    FIXED_SCHEDULE_A_TO_B_SEATS.forEach(item => {
-        allTrips.push(createTripForSeatsPage(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
+        const returnTripLeg: Trip = {
+            id: `${busSchedule.physicalBusId}-Cebu_to_Mantalongon-${format(returnDepartureDateTime, "yyyyMMddHHmm")}`,
+            physicalBusId: busSchedule.physicalBusId,
+            direction: "Cebu_to_Mantalongon",
+            origin: "Cebu City",
+            destination: "Mantalongon",
+            departureTime: format(returnDepartureDateTime, "HH:mm"),
+            arrivalTime: format(returnArrivalDateTime, "HH:mm"),
+            busType: busSchedule.busType,
+            price: price,
+            tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"),
+            departureTimestamp: returnDepartureDateTime.getTime(),
+            arrivalTimestamp: returnArrivalDateTime.getTime(),
+            availableSeats: availableSeatsForType, // Assuming same availability for simplicity
+            totalSeats: totalSeats,
+            busPlateNumber: outboundTripLeg.busPlateNumber,
+            travelDurationMins: TRAVEL_DURATION_HOURS_SEATS * 60,
+            stopoverDurationMins: PARK_DURATION_HOURS_SEATS * 60,
+        };
+        allTripLegs.push(returnTripLeg);
     });
-
-    FIXED_SCHEDULE_B_TO_A_SEATS.forEach(item => {
-        allTrips.push(createTripForSeatsPage(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
-    });
-
-
-    allTrips.sort((a, b) => {
-        const timeComp = a.departureTime.localeCompare(b.departureTime);
-        if (timeComp !== 0) return timeComp;
-        const originComp = a.origin.localeCompare(b.origin);
-        if (originComp !== 0) return originComp;
-        return a.destination.localeCompare(b.destination);
-    });
-    return allTrips;
-  };
+    
+    allTripLegs.sort((a, b) => a.departureTimestamp - b.departureTimestamp);
+    return allTripLegs;
+};
 
 const ALL_MOCK_TRIPS_SEATS = generateMockTripsForSeatsPage();
 
 async function getTripDetails(tripIdToFind: string): Promise<Trip | null> {
-  // Find from the pre-generated list, do not regenerate with new Date()
   return ALL_MOCK_TRIPS_SEATS.find(trip => trip.id === tripIdToFind) || null;
 }
 
 export default function SeatSelectionPage() {
-  const routeParams = useParams();
   const router = useRouter();
+  const routeParams = useParams(); // Use hook for client components
   
+  // Extract tripId safely from routeParams
   let currentTripId: string | undefined;
   if (routeParams?.tripId) {
     currentTripId = Array.isArray(routeParams.tripId) ? routeParams.tripId[0] : routeParams.tripId;
   }
 
-
   const [trip, setTrip] = useState<Trip | null>(null);
-  const [displayStatus, setDisplayStatus] = useState<TripStatus>("Scheduled"); // Default status
+  const [displayStatus, setDisplayStatus] = useState<TripStatus>("Scheduled"); 
   const [selectedDropOff, setSelectedDropOff] = useState<string>('');
   const [passengerType, setPassengerType] = useState<PassengerType>("Regular");
   const [loading, setLoading] = useState(true);
@@ -171,10 +171,8 @@ export default function SeatSelectionPage() {
         let newStatus: TripStatus;
         if (now < trip.departureTimestamp) newStatus = "Scheduled";
         else if (now >= trip.departureTimestamp && now < trip.arrivalTimestamp) newStatus = "Travelling";
-        else newStatus = "Parked";
+        else newStatus = "Parked at Destination"; // Simplified status for seat page based on current leg
         setDisplayStatus(newStatus);
-    } else if (trip?.status) { // Fallback to trip.status if timestamps are not available for some reason
-        setDisplayStatus(trip.status);
     } else {
         setDisplayStatus("Scheduled"); // Default if no trip or status info
     }
@@ -193,15 +191,23 @@ export default function SeatSelectionPage() {
     if (origin === "Mantalongon") {
       fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
     } else if (origin === "Cebu City") {
-      fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType];
+      // For Cebu originating trips, the selectedDropOff is towards Mantalongon.
+      // The FARE_MATRIX needs to be keyed by these intermediate stops if different from Mantalongon->Cebu fares.
+      // Assuming symmetric pricing for now, or specific entries for Cebu->Stop.
+      // If your FARE_MATRIX is only Mantalongon->Stop, you might need another matrix or logic.
+      // For this example, let's assume FARE_MATRIX can handle Cebu City to intermediate stops if they exist there.
+      // If not, we need to be more specific. For now, let's use this.
+      fareFromMatrix = FARE_MATRIX[selectedDropOff]?.[busType]; 
     }
 
 
     if (fareFromMatrix !== undefined) {
       setDynamicRegularFarePerSeat(fareFromMatrix);
     } else if (selectedDropOff === tripFinalDestination) {
+      // This handles the case where the drop-off is the bus's final destination for that leg
       setDynamicRegularFarePerSeat(fullRoutePrice);
     } else {
+      // Fallback or error if specific intermediate fare not found and it's not the final destination
       console.warn(`Fare not found for destination: "${selectedDropOff}" from "${origin}", bus type: "${busType}". Defaulting to full route price: ${fullRoutePrice}`);
       setDynamicRegularFarePerSeat(fullRoutePrice); 
     }
@@ -228,7 +234,7 @@ export default function SeatSelectionPage() {
     return (
       <div className="text-center py-10">
         <Info className="mx-auto h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-2xl font-semibold">Trip not found</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Trip not found</h1>
         <p className="text-muted-foreground">The requested trip could not be found or an ID is missing.</p>
         <Link href="/trips">
           <Button variant="link" className="mt-4 text-primary">Go back to trips</Button>
@@ -237,7 +243,7 @@ export default function SeatSelectionPage() {
     );
   }
 
-  const isBookable = displayStatus === "Scheduled" || displayStatus === "On Standby";
+  const isBookable = displayStatus === "Scheduled";
   const currentRouteStops = trip.origin === "Mantalongon" ? mantalongonRouteStops : cebuRouteStops;
 
   const handleConfirmReservation = () => {
@@ -253,13 +259,11 @@ export default function SeatSelectionPage() {
             try {
                 const userData = JSON.parse(loggedInUser);
                 passengerName = userData.name || "Registered User"; 
-            } catch (e)
-{
+            } catch (e) {
                 console.error("Error parsing logged in user data", e);
             }
         }
     }
-
 
     if (!isUserLoggedIn) {
       router.push('/login');
@@ -280,6 +284,8 @@ export default function SeatSelectionPage() {
       regularFareTotal: regularFareTotalForBooking, 
       discountApplied: discountApplied,
       amountDue: amountDueForBooking, 
+      paymentType: undefined, // Will be updated on payment page
+      amountPaid: undefined, // Will be updated on payment page
       finalFarePaid: 0, // Will be updated on payment page
     };
 
@@ -452,3 +458,4 @@ export default function SeatSelectionPage() {
     </div>
   );
 }
+
