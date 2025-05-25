@@ -1,112 +1,111 @@
 
-import React from "react"; // Added for React.useMemo
-import type { Trip, FilterableBusType, TripStatus, BusType, TripDirection, FilterableTripDirection } from "@/types";
+import React, { useMemo, useEffect, useState } from "react";
+import type { Trip, FilterableBusType, TripStatus, BusType, TripDirection, FilterableTripDirection, PhysicalBusId } from "@/types";
 import { TripCard } from "./trip-card";
 import { AlertTriangle } from "lucide-react";
-import { format, addMinutes, setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
+import { format, addHours, setHours, setMinutes, setSeconds, setMilliseconds, parse } from 'date-fns';
 
-// Fixed Schedule Configuration
-const FIXED_SCHEDULE_MANTALONGON_TO_CEBU: Array<{ time: string; busType: BusType }> = [
-  { time: "02:45", busType: "Traditional" },
-  { time: "03:20", busType: "Traditional" },
-  { time: "04:00", busType: "Traditional" },
-  { time: "05:30", busType: "Traditional" },
-  { time: "08:00", busType: "Airconditioned" },
-  { time: "11:30", busType: "Traditional" },
-  { time: "12:00", busType: "Traditional" },
-  { time: "13:00", busType: "Traditional" },
+// Define the base schedule for outbound trips from Mantalongon
+const MANTALONGON_TO_CEBU_SCHEDULE_BASES: Array<{
+  physicalBusId: PhysicalBusId; // Identifier for the actual bus
+  departureTime: string; // HH:mm format for initial outbound leg
+  busType: BusType;
+}> = [
+  { physicalBusId: "TRAD-001", departureTime: "02:45", busType: "Traditional" },
+  { physicalBusId: "TRAD-002", departureTime: "03:20", busType: "Traditional" },
+  { physicalBusId: "TRAD-003", departureTime: "04:00", busType: "Traditional" },
+  { physicalBusId: "TRAD-004", departureTime: "05:30", busType: "Traditional" },
+  { physicalBusId: "AC-001", departureTime: "08:00", busType: "Airconditioned" },
+  { physicalBusId: "TRAD-005", departureTime: "11:30", busType: "Traditional" },
+  { physicalBusId: "TRAD-006", departureTime: "12:00", busType: "Traditional" },
+  { physicalBusId: "TRAD-007", departureTime: "13:00", busType: "Traditional" },
 ];
 
-const FIXED_SCHEDULE_CEBU_TO_MANTALONGON: Array<{ time: string; busType: BusType }> = [
-  { time: "07:00", busType: "Traditional" },
-  { time: "08:00", busType: "Traditional" },
-  { time: "09:00", busType: "Traditional" },
-  { time: "12:00", busType: "Traditional" },
-  { time: "13:00", busType: "Airconditioned" },
-  { time: "17:00", busType: "Traditional" },
-  { time: "18:00", busType: "Traditional" },
-];
+// Define which physical buses also have scheduled return trips from Cebu.
+// This helps in cases where not all Mantalongon buses have an immediate scheduled return.
+// For this iteration, we assume all buses listed above complete a round trip based on the +5hr logic.
+// If specific return schedules were different, this map would be more complex.
 
-const TRAVEL_DURATION_MINS = 240; // 4 hours
-const STOPOVER_DURATION_MINS = 60; // 1 hour (Not directly used for status calculation here but part of Trip type)
+const TRAVEL_DURATION_HOURS = 4;
+const PARK_DURATION_HOURS = 1;
 
-// Function to generate trips for the current day
+// Function to generate all trip legs (outbound and return) for the current day
 const generateTodaysTrips = (): Trip[] => {
+  const allTripLegs: Trip[] = [];
   const today = new Date();
-  const todayStr = format(today, "yyyy-MM-dd");
-  const allTrips: Trip[] = [];
-  let tripIdCounter = 1;
+  let uniqueTripIdCounter = 1; // For unique Trip.id
 
-  // Helper to create a single trip instance
-  const createTrip = (
-    departureTimeStr: string,
-    busType: BusType,
-    direction: TripDirection,
-    origin: string,
-    destination: string, 
-    currentTripId: number
-  ): Trip => {
-    const [hours, minutes] = departureTimeStr.split(':').map(Number);
-    
-    let departureDateTime = setHours(today, hours);
-    departureDateTime = setMinutes(departureDateTime, minutes);
-    departureDateTime = setSeconds(departureDateTime, 0);
-    departureDateTime = setMilliseconds(departureDateTime, 0);
-    
-    const arrivalDateTime = addMinutes(departureDateTime, TRAVEL_DURATION_MINS);
-    
-    const totalSeatsForType = busType === "Airconditioned" ? 65 : 53;
-    // Deterministic available seats based on tripIdCounter
-    const baseAvailableSeats = busType === "Airconditioned" ? (40 + (currentTripId % 25)) : (30 + (currentTripId % 23));
-    const availableSeatsForType = Math.max(0, Math.min(totalSeatsForType, baseAvailableSeats));
+  MANTALONGON_TO_CEBU_SCHEDULE_BASES.forEach(baseSchedule => {
+    const todayStr = format(today, "yyyy-MM-dd");
 
-    // Deterministic price
-    const finalPrice = busType === "Airconditioned" ? 200 : 180;
+    // 1. Create Outbound Trip (Mantalongon to Cebu)
+    const [outboundHours, outboundMinutes] = baseSchedule.departureTime.split(':').map(Number);
+    let outboundDepartureDateTime = setHours(setMinutes(setSeconds(setMilliseconds(new Date(today), 0), 0), outboundMinutes), outboundHours);
+    let outboundArrivalDateTime = addHours(outboundDepartureDateTime, TRAVEL_DURATION_HOURS);
 
-    return {
-      id: `trip-${currentTripId}`,
-      busId: `bus-${currentTripId % 100 + 1}`,
-      direction,
-      origin,
-      destination, 
-      departureTime: departureTimeStr, 
-      arrivalTime: format(arrivalDateTime, "HH:mm"),
-      travelDurationMins: TRAVEL_DURATION_MINS,
-      stopoverDurationMins: STOPOVER_DURATION_MINS,
-      busType: busType,
-      availableSeats: availableSeatsForType,
-      totalSeats: totalSeatsForType,
-      price: finalPrice, 
-      tripDate: todayStr,
-      // status: currentStatus, // Status will be derived client-side in TripCard
-      busPlateNumber: `XYZ ${currentTripId % 100}${currentTripId % 10}`,
-      departureTimestamp: departureDateTime.getTime(),
-      arrivalTimestamp: arrivalDateTime.getTime(),
+    const outboundTrip: Trip = {
+      id: `trip-${uniqueTripIdCounter++}`,
+      physicalBusId: baseSchedule.physicalBusId,
+      direction: "Mantalongon_to_Cebu",
+      origin: "Mantalongon",
+      destination: "Cebu City",
+      departureTime: baseSchedule.departureTime,
+      arrivalTime: format(outboundArrivalDateTime, "HH:mm"),
+      busType: baseSchedule.busType,
+      price: baseSchedule.busType === "Airconditioned" ? 200 : 180,
+      tripDate: format(outboundDepartureDateTime, "yyyy-MM-dd"),
+      departureTimestamp: outboundDepartureDateTime.getTime(),
+      arrivalTimestamp: outboundArrivalDateTime.getTime(),
+      availableSeats: baseSchedule.busType === "Airconditioned" ? (45 + (uniqueTripIdCounter % 20)) : (30 + (uniqueTripIdCounter % 23)),
+      totalSeats: baseSchedule.busType === "Airconditioned" ? 65 : 53,
+      busPlateNumber: `BUS-${baseSchedule.physicalBusId.slice(-3)}`,
+      travelDurationMins: TRAVEL_DURATION_HOURS * 60,
+      stopoverDurationMins: PARK_DURATION_HOURS * 60,
     };
-  };
+    allTripLegs.push(outboundTrip);
 
-  // Generate trips from Mantalongon to Cebu City
-  FIXED_SCHEDULE_MANTALONGON_TO_CEBU.forEach(item => {
-    allTrips.push(createTrip(item.time, item.busType, "Mantalongon_to_Cebu", "Mantalongon", "Cebu City", tripIdCounter++));
-  });
+    // 2. Create Return Trip (Cebu to Mantalongon) for the same physical bus
+    let returnDepartureDateTime = addHours(outboundArrivalDateTime, PARK_DURATION_HOURS);
+    // If return departure is for "tomorrow" based on simple addition, adjust its date.
+    // For daily repeating schedules, this means its tripDate should be today if departure time is still today.
+    if (format(returnDepartureDateTime, "yyyy-MM-dd") !== todayStr && returnDepartureDateTime.getHours() < outboundHours) {
+        // This condition tries to catch if adding 5 hours pushed it to "next day" but conceptually it's a late trip for "today"
+        // This might need more robust date handling for overnight parking and next-day scheduling.
+        // For now, assume return trips are scheduled based on today's outbound.
+    }
+    
+    let returnArrivalDateTime = addHours(returnDepartureDateTime, TRAVEL_DURATION_HOURS);
 
-  // Generate trips from Cebu City to Mantalongon
-  FIXED_SCHEDULE_CEBU_TO_MANTALONGON.forEach(item => {
-    allTrips.push(createTrip(item.time, item.busType, "Cebu_to_Mantalongon", "Cebu City", "Mantalongon", tripIdCounter++));
+    const returnTrip: Trip = {
+      id: `trip-${uniqueTripIdCounter++}`,
+      physicalBusId: baseSchedule.physicalBusId,
+      direction: "Cebu_to_Mantalongon",
+      origin: "Cebu City",
+      destination: "Mantalongon",
+      departureTime: format(returnDepartureDateTime, "HH:mm"),
+      arrivalTime: format(returnArrivalDateTime, "HH:mm"),
+      busType: baseSchedule.busType,
+      price: baseSchedule.busType === "Airconditioned" ? 200 : 180, // Symmetric pricing
+      tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"), // Date of the return departure
+      departureTimestamp: returnDepartureDateTime.getTime(),
+      arrivalTimestamp: returnArrivalDateTime.getTime(),
+      availableSeats: baseSchedule.busType === "Airconditioned" ? (45 + (uniqueTripIdCounter % 20)) : (30 + (uniqueTripIdCounter % 23)),
+      totalSeats: baseSchedule.busType === "Airconditioned" ? 65 : 53,
+      busPlateNumber: `BUS-${baseSchedule.physicalBusId.slice(-3)}`,
+      travelDurationMins: TRAVEL_DURATION_HOURS * 60,
+      stopoverDurationMins: PARK_DURATION_HOURS * 60,
+    };
+    allTripLegs.push(returnTrip);
   });
   
-  allTrips.sort((a, b) => {
-    const timeComp = a.departureTime.localeCompare(b.departureTime);
-    if (timeComp !== 0) return timeComp;
-    const originComp = a.origin.localeCompare(b.origin);
-    if (originComp !== 0) return originComp;
-    return a.destination.localeCompare(b.destination);
-  });
+  // Sort all trip legs chronologically by their departure timestamp
+  allTripLegs.sort((a, b) => a.departureTimestamp - b.departureTimestamp);
   
-  return allTrips;
+  return allTripLegs;
 };
 
-const mockTrips: Trip[] = generateTodaysTrips();
+// This is generated once per client session/page load.
+const allPossibleTripLegsToday = generateTodaysTrips();
 
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
@@ -114,19 +113,76 @@ interface TripListProps {
 }
 
 export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripListProps) {
-  const filteredTrips = React.useMemo(() => {
-    return mockTrips.filter(trip => {
-      const busTypeMatch = activeBusTypeFilter === "all" || trip.busType === activeBusTypeFilter;
-      const directionMatch = activeDirectionFilter === "all" || trip.direction === activeDirectionFilter;
-      return busTypeMatch && directionMatch;
-    });
-  }, [activeBusTypeFilter, activeDirectionFilter]); 
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const filteredTrips = useMemo(() => {
+    if (!isClient) { // Don't filter on server or before client hydration of status
+      return [];
+    }
+
+    // Group all trip legs by their physicalBusId
+    const tripsByPhysicalBus = allPossibleTripLegsToday.reduce((acc, trip) => {
+      if (!acc[trip.physicalBusId]) {
+        acc[trip.physicalBusId] = [];
+      }
+      acc[trip.physicalBusId].push(trip);
+      return acc;
+    }, {} as Record<PhysicalBusId, Trip[]>);
+
+    const displayableTrips: Trip[] = [];
+    const now = new Date().getTime();
+
+    for (const physicalBusId in tripsByPhysicalBus) {
+      const busLegs = tripsByPhysicalBus[physicalBusId as PhysicalBusId];
+      // Legs are already sorted by departureTimestamp by generateTodaysTrips
+
+      let nextScheduledLegForThisBus: Trip | null = null;
+
+      for (const leg of busLegs) {
+        // Determine current status of this leg
+        let legStatus: TripStatus = "Scheduled"; // Default to scheduled
+        if (now >= leg.departureTimestamp && now < leg.arrivalTimestamp) {
+          legStatus = "Travelling";
+        } else if (now >= leg.arrivalTimestamp) {
+          legStatus = "Parked"; // Or "Completed" for its leg
+        }
+        // else it remains "Scheduled" (now < leg.departureTimestamp)
+
+        if (legStatus === "Scheduled") {
+          // Apply user's filters to this "Scheduled" leg
+          const busTypeMatch = activeBusTypeFilter === "all" || leg.busType === activeBusTypeFilter;
+          const directionMatch = activeDirectionFilter === "all" || leg.direction === activeDirectionFilter;
+          
+          if (busTypeMatch && directionMatch) {
+            nextScheduledLegForThisBus = leg;
+            break; // Found the first scheduled leg for this bus that matches filters
+          }
+        }
+      }
+
+      if (nextScheduledLegForThisBus) {
+        displayableTrips.push(nextScheduledLegForThisBus);
+      }
+    }
+    // Sort final displayable trips again, as different buses might have their next leg at different times
+    displayableTrips.sort((a,b) => a.departureTimestamp - b.departureTimestamp);
+    return displayableTrips;
+
+  }, [activeBusTypeFilter, activeDirectionFilter, isClient]); 
+
+  if (!isClient) {
+     return <div className="text-center py-10 text-muted-foreground">Loading trips...</div>;
+  }
 
   if (filteredTrips.length === 0) {
     return (
       <div className="text-center py-10 text-muted-foreground">
         <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-        <p className="text-xl">No trips available for the selected filters.</p>
+        <p className="text-xl">No trips available for the selected filters and current time.</p>
         <p>Please check back later or adjust your filters.</p>
       </div>
     );
