@@ -33,29 +33,40 @@ export const cebuRouteStops = [
 ] as const;
 export type CebuRouteStop = typeof cebuRouteStops[number];
 
+export type TripStatus = "Scheduled" | "Travelling" | "Parked at Destination" | "Returning" | "Completed for Day";
+export type BadgeColorKey = "blue" | "green" | "yellow" | "orange" | "gray";
 
-export type TripStatus = "Scheduled" | "On Standby" | "Travelling" | "Completed" | "Cancelled" | "Parked";
+export type PhysicalBusId = `TRAD-${string}` | `AC-${string}`;
 
 export interface Trip {
-  id: string;
-  busId?: string;
+  id: string; // Unique ID for this specific trip leg
+  physicalBusId: PhysicalBusId; // ID of the physical bus unit
   direction: TripDirection;
-  origin: string; // Starting point of the bus route
-  destination: string; // Final destination of the bus route
-  departureTime: string; // HH:mm format
-  arrivalTime: string; // HH:mm format
-  travelDurationMins: number;
-  stopoverDurationMins: number;
+  origin: string;
+  destination: string;
+  departureTime: string; // HH:mm format for this leg
+  arrivalTime: string; // HH:mm format for this leg
   busType: BusType;
   availableSeats: number;
   totalSeats: number;
-  price: number; // Price for the full route to final destination
-  tripDate: string; // yyyy-MM-dd format
-  status?: TripStatus; // Made optional, will be derived on client
+  price: number; // Price for the full route to final destination (e.g., M->C or C->M)
+  tripDate: string; // yyyy-MM-dd format, specific to this leg's departure
   busPlateNumber?: string;
-  departureTimestamp: number; // Milliseconds since epoch
-  arrivalTimestamp: number;   // Milliseconds since epoch
+  departureTimestamp: number; // Milliseconds since epoch for this leg's departure
+  arrivalTimestamp: number;   // Milliseconds since epoch for this leg's arrival
+  travelDurationMins: number;
+  stopoverDurationMins: number; // Duration bus waits at destination before return
 }
+
+export interface DisplayTripInfo extends Trip {
+  displayStatus: TripStatus;
+  badgeColorKey: BadgeColorKey;
+  // The `origin`, `destination`, `departureTime`, `arrivalTime`, 
+  // `departureTimestamp`, `arrivalTimestamp`, and `direction` fields 
+  // on this DisplayTripInfo object will reflect the *current leg* 
+  // the bus is on or scheduled for, according to its displayStatus.
+}
+
 
 export type SeatStatus = "available" | "selected" | "reserved";
 
@@ -77,22 +88,22 @@ export type PassengerType = typeof passengerTypes[number];
 export interface Reservation {
   id: string;
   passengerName: string;
-  tripId: string;
+  tripId: string; // Refers to the id of the Trip leg booked
   seatNumbers: string[];
   busType: BusType;
-  departureTime: string;
-  origin?: string; 
-  selectedDestination: string; 
-  tripDate?: string; 
+  departureTime: string; // Departure time of the booked leg
+  origin?: string;  // Origin of the booked leg
+  selectedDestination: string; // User's chosen drop-off
+  tripDate?: string; // Date of the booked leg
   userType: PassengerType;
   
-  regularFareTotal: number; // Total regular fare for selected seats before any discounts
+  regularFareTotal: number; // Total regular fare for selected seats to chosen destination, before discounts
   discountApplied: boolean;
   amountDue: number; // Total amount due after discounts but BEFORE payment options
   
-  paymentType?: "deposit" | "full"; // Set on payment page
-  amountPaid?: number; // Actual amount paid by the user, set on payment page
-  finalFarePaid: number; // This will be the actual amountPaid.
+  paymentType?: "deposit" | "full";
+  amountPaid?: number; 
+  finalFarePaid: number; // Actual amount paid by the user
 }
 
 export interface User {
@@ -100,4 +111,17 @@ export interface User {
   email: string;
   name?: string;
   userType?: PassengerType; 
+}
+
+// For tracking page, specific to the cyclical display
+export type CurrentRouteLeg = 'first-leg' | 'parked-at-destination' | 'return-leg' | 'parked-at-origin' | 'unknown';
+
+export interface CyclicalBusInfo {
+  currentStatus: TripStatus; // Re-using TripStatus for consistency
+  currentOrigin: string;
+  currentDestination: string;
+  currentRouteLeg: CurrentRouteLeg;
+  nextStatusChangeAt?: Date;
+  displayMessage: string;
+  badgeColorKey: BadgeColorKey;
 }
