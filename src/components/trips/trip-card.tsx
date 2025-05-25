@@ -9,24 +9,18 @@ import { Clock, Users, Thermometer, TrendingUp, Tag, ArrowRight, Armchair, Route
 import Image from "next/image";
 
 interface TripCardProps {
-  trip: DisplayTripInfo; // Updated to use DisplayTripInfo
+  trip: DisplayTripInfo;
 }
 
-// This function now primarily sets the base styling for the badge variant.
-// The actual colors are driven by getStatusBadgeColors.
 const getStatusBadgeVariant = (status: TripStatus): "default" | "secondary" | "destructive" | "outline" => {
-  // Most custom-colored badges look good with the "default" or "outline" structure.
-  // "secondary" can also be used if it fits the color scheme.
   switch (status) {
     case "Scheduled":
       return "default";
     case "Travelling":
     case "Returning":
-      return "default"; // Using default for solid backgrounds
-    case "Parked at Destination":
       return "default";
     case "Completed for Day":
-      return "secondary"; // Or "outline"
+      return "secondary";
     default:
       return "default";
   }
@@ -38,14 +32,11 @@ const getStatusBadgeColors = (badgeColorKey: BadgeColorKey): string => {
             return "bg-sky-500 text-sky-50";
         case "green": // Travelling
             return "bg-emerald-500 text-emerald-50";
-        case "yellow": // Parked at Destination
-            return "bg-amber-400 text-amber-950"; // Ensure text has good contrast
         case "orange": // Returning
             return "bg-orange-500 text-orange-50";
         case "gray": // Completed for Day
             return "bg-slate-500 text-slate-50";
         default:
-            // Fallback, though ideally all badgeColorKeys are handled
             return "bg-primary text-primary-foreground"; 
     }
 }
@@ -62,8 +53,8 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
     origin, 
     destination, 
     tripDate,
-    displayStatus, // From DisplayTripInfo
-    badgeColorKey   // From DisplayTripInfo
+    displayStatus,
+    badgeColorKey
   } = trip;
 
   const isBookable = displayStatus === "Scheduled";
@@ -106,7 +97,6 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Tag className="h-4 w-4 mr-2 text-primary" />
-          {/* Price displayed is for the full leg shown (M->C or C->M) */}
           <span>Price: PHP {price.toFixed(2)}</span>
         </div>
       </CardContent>
@@ -120,9 +110,10 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
         ) : (
           <Button className="w-full" variant="outline" disabled>
             <Info className="mr-2 h-4 w-4" /> 
-            {displayStatus === "Completed for Day" ? "Trip Completed" : 
-             (displayStatus === "Parked at Destination" ? "Bus Parked" : 
-             (displayStatus === "Returning" || displayStatus === "Travelling" ? `Bus ${displayStatus}` : "Not Bookable"))}
+            {displayStatus === "Travelling" ? "Bus Travelling" :
+             displayStatus === "Returning" ? "Bus Returning" :
+             displayStatus === "Completed for Day" ? "Trip Completed" :
+             "Not Bookable"}
           </Button>
         )}
       </CardFooter>

@@ -33,8 +33,9 @@ export const cebuRouteStops = [
 ] as const;
 export type CebuRouteStop = typeof cebuRouteStops[number];
 
-export type TripStatus = "Scheduled" | "Travelling" | "Parked at Destination" | "Returning" | "Completed for Day";
-export type BadgeColorKey = "blue" | "green" | "yellow" | "orange" | "gray";
+// Updated TripStatus
+export type TripStatus = "Scheduled" | "Travelling" | "Returning" | "Completed for Day";
+export type BadgeColorKey = "blue" | "green" | "orange" | "gray";
 
 export type PhysicalBusId = `TRAD-${string}` | `AC-${string}`;
 
@@ -61,26 +62,8 @@ export interface Trip {
 export interface DisplayTripInfo extends Trip {
   displayStatus: TripStatus;
   badgeColorKey: BadgeColorKey;
-  // The `origin`, `destination`, `departureTime`, `arrivalTime`, 
-  // `departureTimestamp`, `arrivalTimestamp`, and `direction` fields 
-  // on this DisplayTripInfo object will reflect the *current leg* 
-  // the bus is on or scheduled for, according to its displayStatus.
 }
 
-
-export type SeatStatus = "available" | "selected" | "reserved";
-
-export interface Seat {
-  id: string;
-  label: string;
-  status: SeatStatus;
-  price?: number;
-}
-
-export interface SeatLayout {
-  mainSeatRows: (Seat | null)[][];
-  rearBenchRow: (Seat | null)[];
-}
 
 export const passengerTypes = ["Regular", "Student", "Senior", "PWD"] as const;
 export type PassengerType = typeof passengerTypes[number];
@@ -99,7 +82,7 @@ export interface Reservation {
   
   regularFareTotal: number; // Total regular fare for selected seats to chosen destination, before discounts
   discountApplied: boolean;
-  amountDue: number; // Total amount due after discounts but BEFORE payment options
+  amountDue: number; // Total amount due after discounts 
   
   paymentType?: "deposit" | "full";
   amountPaid?: number; 

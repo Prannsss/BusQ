@@ -6,43 +6,43 @@ import { AlertTriangle } from "lucide-react";
 import { format, addHours, setHours, setMinutes, setSeconds, setMilliseconds, parse } from 'date-fns';
 
 const TRAVEL_DURATION_HOURS = 4;
-const PARK_DURATION_HOURS = 1; // 1 hour break at destination
+const PARK_DURATION_HOURS = 1; 
 
 // Define the 8 physical buses and their initial Mantalongon departure time
 const PHYSICAL_BUS_SCHEDULES: Array<{
   physicalBusId: PhysicalBusId;
   busType: BusType;
-  mantalongonDepartureTime: string; // HH:mm format
+  mantalongonDepartureTime: string; 
+  busPlateNumber: string;
 }> = [
-  { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45" },
-  { physicalBusId: "TRAD-002", busType: "Traditional", mantalongonDepartureTime: "03:20" },
-  { physicalBusId: "TRAD-003", busType: "Traditional", mantalongonDepartureTime: "04:00" },
-  { physicalBusId: "TRAD-004", busType: "Traditional", mantalongonDepartureTime: "05:30" },
-  { physicalBusId: "AC-001", busType: "Airconditioned", mantalongonDepartureTime: "08:00" },
-  { physicalBusId: "TRAD-005", busType: "Traditional", mantalongonDepartureTime: "11:30" },
-  { physicalBusId: "TRAD-006", busType: "Traditional", mantalongonDepartureTime: "12:00" },
-  { physicalBusId: "TRAD-007", busType: "Traditional", mantalongonDepartureTime: "13:00" },
+  { physicalBusId: "TRAD-001", busType: "Traditional", mantalongonDepartureTime: "02:45", busPlateNumber: "BUS-MTC-0245" },
+  { physicalBusId: "TRAD-002", busType: "Traditional", mantalongonDepartureTime: "03:20", busPlateNumber: "BUS-MTC-0320" },
+  { physicalBusId: "TRAD-003", busType: "Traditional", mantalongonDepartureTime: "04:00", busPlateNumber: "BUS-MTC-0400" },
+  { physicalBusId: "TRAD-004", busType: "Traditional", mantalongonDepartureTime: "05:30", busPlateNumber: "BUS-MTC-0530" },
+  { physicalBusId: "AC-001",   busType: "Airconditioned", mantalongonDepartureTime: "08:00", busPlateNumber: "BUS-MTC-0800-AC" },
+  { physicalBusId: "TRAD-005", busType: "Traditional", mantalongonDepartureTime: "11:30", busPlateNumber: "BUS-MTC-1130" },
+  { physicalBusId: "TRAD-006", busType: "Traditional", mantalongonDepartureTime: "12:00", busPlateNumber: "BUS-MTC-1200" },
+  { physicalBusId: "TRAD-007", busType: "Traditional", mantalongonDepartureTime: "13:00", busPlateNumber: "BUS-MTC-1300" },
 ];
 
-// Function to generate all trip legs (outbound and return) for the current day for all physical buses
 const generateTodaysTrips = (): Trip[] => {
   const allTripLegs: Trip[] = [];
-  const today = new Date(); // Represents the start of "today" for scheduling purposes
+  const today = new Date();
 
   PHYSICAL_BUS_SCHEDULES.forEach(busSchedule => {
-    const todayStr = format(today, "yyyy-MM-dd"); // Base date for trip legs
-
-    // 1. Outbound Trip (Mantalongon to Cebu)
     const [outboundHours, outboundMinutes] = busSchedule.mantalongonDepartureTime.split(':').map(Number);
     let outboundDepartureDateTime = setHours(setMinutes(setSeconds(setMilliseconds(new Date(today), 0), 0), outboundMinutes), outboundHours);
-    
-    // If outboundDepartureDateTime is in the past relative to 'today's start + actual time', advance to next day's schedule
-    // This logic is more complex for multi-day views. For "today's trips", we assume it's for the current calendar day.
-    // If it's 1 AM and a bus departs 2:45 AM, its `outboundDepartureDateTime` is `today` at 2:45 AM.
-    // If it's 3 AM and a bus departs 2:45 AM, this function would still generate it for `today` at 2:45 AM.
-    // The filtering logic later will determine its status as "Travelling" or "Parked".
-
     let outboundArrivalDateTime = addHours(outboundDepartureDateTime, TRAVEL_DURATION_HOURS);
+
+    const totalSeats = busSchedule.busType === "Airconditioned" ? 65 : 53;
+    // Deterministic available seats for consistency across renders
+    const busNumericId = parseInt(busSchedule.physicalBusId.replace(/[^0-9]/g, ''), 10) || 1;
+    const baseAvailableSeats = busSchedule.busType === "Airconditioned" 
+        ? (40 + (busNumericId % 25)) 
+        : (25 + (busNumericId % 28));
+    const availableSeatsForType = Math.max(5, Math.min(totalSeats, baseAvailableSeats));
+
+    const price = busSchedule.busType === "Airconditioned" ? 200 : 180;
 
     const outboundTripLeg: Trip = {
       id: `${busSchedule.physicalBusId}-MtoC-${format(outboundDepartureDateTime, "yyyyMMddHHmm")}`,
@@ -53,19 +53,18 @@ const generateTodaysTrips = (): Trip[] => {
       departureTime: busSchedule.mantalongonDepartureTime,
       arrivalTime: format(outboundArrivalDateTime, "HH:mm"),
       busType: busSchedule.busType,
-      price: busSchedule.busType === "Airconditioned" ? 200 : 180,
+      price: price,
       tripDate: format(outboundDepartureDateTime, "yyyy-MM-dd"),
       departureTimestamp: outboundDepartureDateTime.getTime(),
       arrivalTimestamp: outboundArrivalDateTime.getTime(),
-      availableSeats: busSchedule.busType === "Airconditioned" ? (45 + (parseInt(busSchedule.physicalBusId.slice(-3)) % 20)) : (30 + (parseInt(busSchedule.physicalBusId.slice(-3)) % 23)),
-      totalSeats: busSchedule.busType === "Airconditioned" ? 65 : 53,
-      busPlateNumber: `BUS-${busSchedule.physicalBusId.slice(-3)}`, // Example plate
+      availableSeats: availableSeatsForType,
+      totalSeats: totalSeats,
+      busPlateNumber: busSchedule.busPlateNumber,
       travelDurationMins: TRAVEL_DURATION_HOURS * 60,
       stopoverDurationMins: PARK_DURATION_HOURS * 60,
     };
     allTripLegs.push(outboundTripLeg);
 
-    // 2. Return Trip (Cebu to Mantalongon) for the same physical bus
     let returnDepartureDateTime = addHours(outboundArrivalDateTime, PARK_DURATION_HOURS);
     let returnArrivalDateTime = addHours(returnDepartureDateTime, TRAVEL_DURATION_HOURS);
 
@@ -78,25 +77,24 @@ const generateTodaysTrips = (): Trip[] => {
       departureTime: format(returnDepartureDateTime, "HH:mm"),
       arrivalTime: format(returnArrivalDateTime, "HH:mm"),
       busType: busSchedule.busType,
-      price: busSchedule.busType === "Airconditioned" ? 200 : 180, // Symmetric pricing
-      tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"), // Date of the return departure
+      price: price, 
+      tripDate: format(returnDepartureDateTime, "yyyy-MM-dd"),
       departureTimestamp: returnDepartureDateTime.getTime(),
       arrivalTimestamp: returnArrivalDateTime.getTime(),
-      availableSeats: outboundTripLeg.availableSeats, // Assuming same availability for simplicity
-      totalSeats: outboundTripLeg.totalSeats,
-      busPlateNumber: outboundTripLeg.busPlateNumber,
+      availableSeats: availableSeatsForType, 
+      totalSeats: totalSeats,
+      busPlateNumber: busSchedule.busPlateNumber,
       travelDurationMins: TRAVEL_DURATION_HOURS * 60,
-      stopoverDurationMins: PARK_DURATION_HOURS * 60, // Not strictly applicable for return leg's end
+      stopoverDurationMins: PARK_DURATION_HOURS * 60,
     };
     allTripLegs.push(returnTripLeg);
   });
   
-  // Sort all trip legs chronologically by their departure timestamp
   allTripLegs.sort((a, b) => a.departureTimestamp - b.departureTimestamp);
-  
   return allTripLegs;
 };
 
+const ALL_POSSIBLE_TRIP_LEGS_TODAY = generateTodaysTrips();
 
 interface TripListProps {
   activeBusTypeFilter: FilterableBusType;
@@ -107,94 +105,89 @@ export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripLis
   const [isClient, setIsClient] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().getTime());
 
-  // Memoize the generation of all possible trip legs for today
-  const allPossibleTripLegsToday = useMemo(() => generateTodaysTrips(), []);
-
   useEffect(() => {
     setIsClient(true);
-    // Update current time every 30 seconds to refresh statuses
     const timerId = setInterval(() => {
       setCurrentTime(new Date().getTime());
-    }, 30000); // 30 seconds
+    }, 30000); 
     return () => clearInterval(timerId);
   }, []);
 
   const displayableBusStates = useMemo(() => {
-    const now = currentTime; // Use state for current time to trigger re-memoization
+    if (!isClient) return []; // Don't compute on server or before client hydration
+
+    const now = currentTime;
     const representations: DisplayTripInfo[] = [];
 
     PHYSICAL_BUS_SCHEDULES.forEach(busSched => {
-      const mToCLeg = allPossibleTripLegsToday.find(
+      const mToCLeg = ALL_POSSIBLE_TRIP_LEGS_TODAY.find(
         leg => leg.physicalBusId === busSched.physicalBusId && leg.direction === "Mantalongon_to_Cebu"
       );
-      const cToMLeg = allPossibleTripLegsToday.find(
+      const cToMLeg = ALL_POSSIBLE_TRIP_LEGS_TODAY.find(
         leg => leg.physicalBusId === busSched.physicalBusId && leg.direction === "Cebu_to_Mantalongon"
       );
 
       if (!mToCLeg || !cToMLeg) {
-        // Should not happen if generateTodaysTrips is correct
         console.warn(`Missing legs for physicalBusId: ${busSched.physicalBusId}`);
         return;
       }
 
-      let representativeLeg: Trip;
-      let displayStatus: TripStatus;
-      let badgeColorKey: BadgeColorKey;
+      let representativeLeg: Trip | undefined;
+      let currentDisplayStatus: TripStatus | undefined;
+      let currentBadgeColorKey: BadgeColorKey | undefined;
 
       if (now < mToCLeg.departureTimestamp) {
+        // Phase 1: Scheduled for outbound M->C trip
         representativeLeg = mToCLeg;
-        displayStatus = "Scheduled";
-        badgeColorKey = "blue";
+        currentDisplayStatus = "Scheduled";
+        currentBadgeColorKey = "blue";
       } else if (now < mToCLeg.arrivalTimestamp) {
+        // Phase 2: Travelling on outbound M->C trip
         representativeLeg = mToCLeg;
-        displayStatus = "Travelling";
-        badgeColorKey = "green";
-      } else if (now < cToMLeg.departureTimestamp) { // Parked at Destination (Cebu)
-        representativeLeg = mToCLeg; // Base info on the leg that just completed
-        displayStatus = "Parked at Destination";
-        badgeColorKey = "yellow";
+        currentDisplayStatus = "Travelling";
+        currentBadgeColorKey = "green";
+      } else if (now < cToMLeg.departureTimestamp) {
+        // Phase 3: Parked at Cebu, *representing the upcoming return trip as Scheduled*
+        representativeLeg = cToMLeg; 
+        currentDisplayStatus = "Scheduled"; 
+        currentBadgeColorKey = "blue";
       } else if (now < cToMLeg.arrivalTimestamp) {
+        // Phase 4: Returning on C->M trip
         representativeLeg = cToMLeg;
-        displayStatus = "Returning";
-        badgeColorKey = "orange";
-      } else { // Completed for Day (Parked at Origin - Mantalongon)
-        representativeLeg = cToMLeg; // Base info on the leg that just completed
-        displayStatus = "Completed for Day";
-        badgeColorKey = "gray";
+        currentDisplayStatus = "Returning";
+        currentBadgeColorKey = "orange";
+      } else {
+        // Phase 5: Completed all trips for the day
+        representativeLeg = cToMLeg; 
+        currentDisplayStatus = "Completed for Day";
+        currentBadgeColorKey = "gray";
       }
       
-      const displayTrip: DisplayTripInfo = {
-        ...representativeLeg,
-        displayStatus,
-        badgeColorKey,
-      };
-      representations.push(displayTrip);
-    });
+      if (representativeLeg && currentDisplayStatus && currentBadgeColorKey) {
+        const displayTrip: DisplayTripInfo = {
+          ...representativeLeg,
+          displayStatus: currentDisplayStatus,
+          badgeColorKey: currentBadgeColorKey,
+        };
 
-    // Apply user filters
-    const filteredRepresentations = representations.filter(displayTrip => {
-      const busTypeMatch = activeBusTypeFilter === "all" || displayTrip.busType === activeBusTypeFilter;
-      
-      // Filter based on the direction of the *representative leg* being shown
-      const directionMatch = activeDirectionFilter === "all" || displayTrip.direction === activeDirectionFilter;
-      
-      return busTypeMatch && directionMatch;
+        const busTypeMatch = activeBusTypeFilter === "all" || displayTrip.busType === activeBusTypeFilter;
+        const directionMatch = activeDirectionFilter === "all" || displayTrip.direction === activeDirectionFilter;
+
+        if (busTypeMatch && directionMatch) {
+          representations.push(displayTrip);
+        }
+      }
     });
     
-    // Sort final displayable trips by the departure timestamp of their representative leg
-    // Or, if "Scheduled" is primary, sort by that, then by others.
-    // For now, sort by departure time of the represented leg.
-    filteredRepresentations.sort((a,b) => {
-        // Prioritize "Scheduled" trips first
+    representations.sort((a,b) => {
         if (a.displayStatus === "Scheduled" && b.displayStatus !== "Scheduled") return -1;
         if (a.displayStatus !== "Scheduled" && b.displayStatus === "Scheduled") return 1;
-        // Then sort by departure time of the current leg
         return a.departureTimestamp - b.departureTimestamp;
     });
 
-    return filteredRepresentations;
+    return representations;
 
-  }, [allPossibleTripLegsToday, activeBusTypeFilter, activeDirectionFilter, currentTime]); // Re-run when currentTime changes
+  }, [activeBusTypeFilter, activeDirectionFilter, currentTime, isClient]); 
 
   if (!isClient) {
      return <div className="text-center py-10 text-muted-foreground">Loading trips...</div>;
@@ -204,7 +197,7 @@ export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripLis
     return (
       <div className="text-center py-10 text-muted-foreground">
         <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-        <p className="text-xl">No buses match the current filters or all trips for today are completed.</p>
+        <p className="text-xl">No buses match the current filters.</p>
         <p>Please check back later or adjust your filters.</p>
       </div>
     );
@@ -213,9 +206,7 @@ export function TripList({ activeBusTypeFilter, activeDirectionFilter }: TripLis
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {displayableBusStates.map((displayTrip) => (
-        // The key should be stable for the bus, even if its representative leg changes.
-        // Using physicalBusId ensures the card doesn't re-mount unnecessarily if just status changes.
-        <TripCard key={displayTrip.physicalBusId} trip={displayTrip} />
+        <TripCard key={displayTrip.physicalBusId + "_" + displayTrip.direction + "_" + displayTrip.displayStatus} trip={displayTrip} />
       ))}
     </div>
   );
