@@ -8,9 +8,6 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">Welcome Back!</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Log in to access your account and manage your trips.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />

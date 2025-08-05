@@ -1,5 +1,4 @@
-
-import React from "react"; // Import React for React.memo
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bus, MapPin, Ticket, ArrowRight, LogIn, UserPlus } from "lucide-react";

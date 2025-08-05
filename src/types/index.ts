@@ -2,40 +2,30 @@
 export type BusType = "Traditional" | "Airconditioned";
 export type FilterableBusType = BusType | "all";
 
-export type TripDirection = "Mantalongon_to_Cebu" | "Cebu_to_Mantalongon";
+export type TripDirection = "South_Terminal_to_Destination";
 export type FilterableTripDirection = TripDirection | "all";
 
-// Valid drop-off points for trips originating from Mantalongon
-export const mantalongonRouteStops = [
-  "Dalaguete",
+// Available destinations from South Bus Terminal
+export const southTerminalDestinations = [
+  "Naga",
+  "San Fernando", 
+  "Carcar",
+  "Sibonga",
   "Argao",
-  "Sibonga", // "Sibonga (includes Simala)" - represented as Sibonga
-  "Carcar City",
-  "San Fernando",
-  "Naga City",
-  "Minglanilla",
-  "Talisay City",
-  "Cebu City", // Final destination
+  "Dalaguete",
+  "Alcoy",
+  "Boljoon",
+  "Oslob",
+  "Santander"
 ] as const;
-export type MantalongonRouteStop = typeof mantalongonRouteStops[number];
+export type SouthTerminalDestination = typeof southTerminalDestinations[number];
 
-// Valid drop-off points for trips originating from Cebu City
-export const cebuRouteStops = [
-  "Talisay City",
-  "Minglanilla",
-  "Naga City",
-  "San Fernando",
-  "Carcar City",
-  "Sibonga", // "Sibonga (includes Simala)" - represented as Sibonga
-  "Argao",
-  "Dalaguete",
-  "Mantalongon", // Final destination
-] as const;
-export type CebuRouteStop = typeof cebuRouteStops[number];
+// For backward compatibility
+export type FilterableDestination = SouthTerminalDestination | "all";
 
 // Updated TripStatus
 export type TripStatus = "Scheduled" | "Travelling" | "Returning" | "Completed for Day";
-export type BadgeColorKey = "blue" | "green" | "orange" | "gray";
+export type BadgeColorKey = "blue" | "green" | "gray";
 
 export type PhysicalBusId = `TRAD-${string}` | `AC-${string}`;
 
@@ -62,6 +52,7 @@ export interface Trip {
 export interface DisplayTripInfo extends Trip {
   displayStatus: TripStatus;
   badgeColorKey: BadgeColorKey;
+  busName?: string; // Add optional bus name field
 }
 
 

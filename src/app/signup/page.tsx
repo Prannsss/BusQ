@@ -8,9 +8,6 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">Create an Account</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Join BusQ to start your journey.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <SignupForm />

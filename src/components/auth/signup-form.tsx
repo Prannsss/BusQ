@@ -106,7 +106,7 @@ export function SignupForm() {
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="jtamad@gmail.com"
                     {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />
@@ -127,7 +127,7 @@ export function SignupForm() {
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Password"
                     {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />
@@ -148,7 +148,7 @@ export function SignupForm() {
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Confirm Password"
                     {...field}
                     className="pl-10 bg-input border-border focus:ring-primary"
                   />

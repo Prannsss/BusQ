@@ -10,31 +10,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { FilterableBusType, FilterableTripDirection } from "@/types";
+import type { FilterableBusType } from "@/types";
 import { Card, CardContent } from "../ui/card";
 import { Filter } from "lucide-react";
 
 interface TripFiltersProps {
   activeBusTypeFilter: FilterableBusType;
   onBusTypeFilterChange: (value: FilterableBusType) => void;
-  activeDirectionFilter: FilterableTripDirection;
-  onDirectionFilterChange: (value: FilterableTripDirection) => void;
 }
 
 // Wrap TripFilters with React.memo
 const TripFilters = React.memo(function TripFilters({ 
     activeBusTypeFilter, 
     onBusTypeFilterChange,
-    activeDirectionFilter,
-    onDirectionFilterChange,
 }: TripFiltersProps) {
   
   const handleBusTypeChange = (value: string) => {
     onBusTypeFilterChange(value as FilterableBusType);
-  };
-
-  const handleDirectionChange = (value: string) => {
-    onDirectionFilterChange(value as FilterableTripDirection);
   };
 
   return (
@@ -46,20 +38,6 @@ const TripFilters = React.memo(function TripFilters({
                 Filter Trips
             </div>
             <div className="flex-grow"></div> {/* Spacer */}
-            
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Label htmlFor="direction-select" className="text-muted-foreground whitespace-nowrap">Direction:</Label>
-              <Select value={activeDirectionFilter} onValueChange={handleDirectionChange}>
-                  <SelectTrigger id="direction-select" className="w-full sm:w-[240px] bg-input border-border focus:ring-primary">
-                  <SelectValue placeholder="Select direction" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-popover">
-                  <SelectItem value="all">All Directions</SelectItem>
-                  <SelectItem value="Mantalongon_to_Cebu">Mantalongon to Cebu</SelectItem>
-                  <SelectItem value="Cebu_to_Mantalongon">From Cebu City</SelectItem>
-                  </SelectContent>
-              </Select>
-            </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Label htmlFor="bus-type-select" className="text-muted-foreground whitespace-nowrap">Bus Type:</Label>
@@ -69,7 +47,7 @@ const TripFilters = React.memo(function TripFilters({
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-popover">
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Traditional">Traditional</SelectItem>
+                  <SelectItem value="Traditional">Non-Airconditioned</SelectItem>
                   <SelectItem value="Airconditioned">Airconditioned</SelectItem>
                   </SelectContent>
               </Select>

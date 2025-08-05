@@ -18,10 +18,7 @@ const getStatusBadgeVariant = (status: TripStatus): "default" | "secondary" | "d
     case "Scheduled":
       return "default"; // Blue
     case "Travelling":
-    case "Returning":
-      return "default"; // Green/Orange
-    case "Parked at Destination":
-      return "default"; // Yellow
+      return "default"; // Green
     case "Completed for Day":
       return "secondary"; // Gray
     default:
@@ -35,10 +32,6 @@ const getStatusBadgeColors = (badgeColorKey: BadgeColorKey): string => {
             return "bg-sky-500 text-sky-50 hover:bg-sky-600";
         case "green": // Travelling
             return "bg-emerald-500 text-emerald-50 hover:bg-emerald-600";
-        case "yellow": // Parked at Destination
-             return "bg-amber-400 text-amber-900 hover:bg-amber-500";
-        case "orange": // Returning
-            return "bg-orange-500 text-orange-50 hover:bg-orange-600";
         case "gray": // Completed for Day
             return "bg-slate-500 text-slate-50 hover:bg-slate-600";
         default:
@@ -62,6 +55,7 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
     badgeColorKey,   // This is now passed directly
     departureTimestamp,
     arrivalTimestamp,
+    busName = "Unknown Bus" // Default bus name if not provided
   } = trip;
 
   // State for client-side status updates
@@ -78,29 +72,23 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
       let newColorKey: BadgeColorKey = "gray";
 
       // This logic should mirror the one in TripList for determining the *current actual phase*
-      // For simplicity, we'll use the provided departure/arrival of this specific leg.
-      // A more robust solution might involve re-evaluating against both MtoC and CtoM legs
-      // if TripCard was meant to represent the physical bus's entire cycle.
-      // However, TripList now sends the *representative leg's* details.
+      // For South Terminal trips, it's a simple one-way journey to the destination.
+      // We no longer have the complex MtoC and CtoM cycle logic.
 
       if (now < departureTimestamp) {
         newStatus = "Scheduled";
         newColorKey = "blue";
       } else if (now < arrivalTimestamp) {
-        // Determine if it's outbound "Travelling" or inbound "Returning" based on direction prop
-        newStatus = trip.direction === "Mantalongon_to_Cebu" ? "Travelling" : "Returning";
-        newColorKey = trip.direction === "Mantalongon_to_Cebu" ? "green" : "orange";
+        // For South Terminal trips, it's always "Travelling" when en route
+        newStatus = "Travelling";
+        newColorKey = "green";
       } else {
-        // If current time is past this leg's arrival, it's effectively "Parked" or "Completed"
-        // The TripList logic will determine which leg (and its associated status) to show.
-        // For this card, if it's past its own arrival, it's effectively done for this segment.
-        // We rely on TripList to pass the correct *overall* status.
-        // This internal timer is more for intra-leg status changes (e.g. Scheduled -> Travelling)
-        newStatus = displayStatus; // Keep what TripList decided for post-arrival state
-        newColorKey = badgeColorKey;
+        // Trip has completed
+        newStatus = "Completed for Day";
+        newColorKey = "gray";
          if (displayStatus === "Scheduled" && now >= departureTimestamp) { // Catch if it just started
-            newStatus = trip.direction === "Mantalongon_to_Cebu" ? "Travelling" : "Returning";
-            newColorKey = trip.direction === "Mantalongon_to_Cebu" ? "green" : "orange";
+            newStatus = "Travelling";
+            newColorKey = "green";
          }
       }
       
@@ -144,7 +132,10 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
               <Badge variant="secondary" className="absolute top-2 left-2">Loading...</Badge>
             )}
         </div>
-        <CardTitle className="text-foreground">{origin} <Route className="inline h-5 w-5 mx-1 text-muted-foreground" /> {destination}</CardTitle>
+        <CardTitle className="text-foreground">{busName}</CardTitle>
+        <CardDescription className="text-muted-foreground flex items-center">
+          <Route className="h-4 w-4 mr-2" /> South Terminal → All Southern Destinations
+        </CardDescription>
         <CardDescription className="text-muted-foreground flex items-center">
           <Clock className="h-4 w-4 mr-2" /> {departureTime} - {arrivalTime}
         </CardDescription>
@@ -174,8 +165,6 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
           <Button className="w-full" variant="outline" disabled>
             <Info className="mr-2 h-4 w-4" /> 
             {currentDisplayStatus === "Travelling" ? "Bus Travelling" :
-             currentDisplayStatus === "Returning" ? "Bus Returning" :
-             currentDisplayStatus === "Parked at Destination" ? "Parked at Destination" :
              currentDisplayStatus === "Completed for Day" ? "Trip Completed" :
              !isClient ? "Checking Status..." : // Fallback if client hasn't determined status yet
              "Not Bookable"}
