@@ -31,20 +31,6 @@ export default function HomePage() {
           linkText="Track a Bus"
         />
       </div>
-      
-      <div className="mb-12">
-        <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Scenic route placeholder" 
-            width={800} 
-            height={400} 
-            className="rounded-lg shadow-lg"
-            data-ai-hint="mountain road"
-            priority 
-        />
-      </div>
-
-      {/* Login and Signup buttons removed from here */}
     </div>
   );
 }

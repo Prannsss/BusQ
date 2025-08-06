@@ -40,6 +40,13 @@ const PHYSICAL_BUS_SCHEDULES_TRACKING: Array<{
   { physicalBusId: "TRAD-004", busType: "Traditional", busName: "Sunrays Transit 3", southTerminalDepartureTime: "10:00", busPlateNumber: "BUS-STB-1000" },
   { physicalBusId: "AC-003", busType: "Airconditioned", busName: "Ceres Deluxe 3", southTerminalDepartureTime: "11:00", busPlateNumber: "BUS-STB-1100-AC" },
   { physicalBusId: "TRAD-005", busType: "Traditional", busName: "Sunrays Express 4", southTerminalDepartureTime: "14:00", busPlateNumber: "BUS-STB-1400" },
+  { physicalBusId: "AC-004", busType: "Airconditioned", busName: "Ceres Deluxe 4", southTerminalDepartureTime: "15:00", busPlateNumber: "BUS-STB-1500-AC" },
+  { physicalBusId: "TRAD-006", busType: "Traditional", busName: "Sunrays Express 5", southTerminalDepartureTime: "16:00", busPlateNumber: "BUS-STB-1600" },
+  { physicalBusId: "AC-005", busType: "Airconditioned", busName: "Ceres Aircon 3", southTerminalDepartureTime: "17:00", busPlateNumber: "BUS-STB-1700-AC" },
+  { physicalBusId: "TRAD-007", busType: "Traditional", busName: "Sunrays Transit 6", southTerminalDepartureTime: "18:00", busPlateNumber: "BUS-STB-1800" },
+  { physicalBusId: "TRAD-008", busType: "Traditional", busName: "Sunrays Express 7", southTerminalDepartureTime: "19:00", busPlateNumber: "BUS-STB-1900" },
+  { physicalBusId: "AC-006", busType: "Airconditioned", busName: "Ceres Deluxe 5", southTerminalDepartureTime: "20:00", busPlateNumber: "BUS-STB-2000-AC" },
+  { physicalBusId: "AC-007", busType: "Airconditioned", busName: "Ceres Express 2", southTerminalDepartureTime: "21:00", busPlateNumber: "BUS-STB-2100-AC" },
 ];
 
 const generateTodaysTripsForTracking = (): Trip[] => {

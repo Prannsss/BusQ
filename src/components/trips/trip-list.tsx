@@ -75,6 +75,55 @@ const PHYSICAL_BUS_SCHEDULES: Array<{
     departureTime: "14:00", 
     busPlateNumber: "BUS-STB-1400" 
   },
+  { 
+    physicalBusId: "AC-004", 
+    busType: "Airconditioned", 
+    busName: "Ceres Deluxe 4",
+    departureTime: "15:00", 
+    busPlateNumber: "BUS-STB-1500-AC" 
+  },
+  { 
+    physicalBusId: "TRAD-006", 
+    busType: "Traditional", 
+    busName: "Sunrays Express 5",
+    departureTime: "16:00", 
+    busPlateNumber: "BUS-STB-1600" 
+  },
+  { 
+    physicalBusId: "AC-005", 
+    busType: "Airconditioned", 
+    busName: "Ceres Aircon 3",
+    departureTime: "17:00", 
+    busPlateNumber: "BUS-STB-1700-AC" 
+  },
+  { 
+    physicalBusId: "TRAD-007", 
+    busType: "Traditional", 
+    busName: "Sunrays Transit 6",
+    departureTime: "18:00", 
+    busPlateNumber: "BUS-STB-1800" 
+  },
+  { 
+    physicalBusId: "TRAD-008", 
+    busType: "Traditional", 
+    busName: "Sunrays Express 7",
+    departureTime: "19:00", 
+    busPlateNumber: "BUS-STB-1900" 
+  },
+  { 
+    physicalBusId: "AC-006", 
+    busType: "Airconditioned", 
+    busName: "Ceres Deluxe 5",
+    departureTime: "20:00", 
+    busPlateNumber: "BUS-STB-2000-AC" 
+  },
+  { 
+    physicalBusId: "AC-007", 
+    busType: "Airconditioned", 
+    busName: "Ceres Express 2",
+    departureTime: "21:00", 
+    busPlateNumber: "BUS-STB-2100-AC" 
+  },
 ];
 
 const generateTodaysTrips = (): Trip[] => {
