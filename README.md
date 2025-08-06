@@ -1,6 +1,6 @@
 ## 🚌 BusQ – BusReservation&Tracker
 
-A real-time bus reservation and tracking app that allows users to book seats, track bus locations via GPS, and check live bus statuses. The platform is built for Bus Transorts that connects South Bus Terminal with stops in between.
+A real-time bus reservation and tracking app that allows users to book seats, track bus locations via GPS, and check live bus statuses. The platform is built for Bus Transports that connects South Bus Terminal with stops in between.
 
 ---
 
