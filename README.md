@@ -1,6 +1,6 @@
-## 🚌 El-Joesur Highlander Transport – BusReservation&Tracker
+## 🚌 BusQ – BusReservation&Tracker
 
-A real-time bus reservation and tracking app that allows users to book seats, track bus locations via GPS, and check live bus statuses. The platform is built for El-Joesur Highlander Transport and connects Mantalongon, Dalaguete to Cebu City with stops in between.
+A real-time bus reservation and tracking app that allows users to book seats, track bus locations via GPS, and check live bus statuses. The platform is built for Bus Transorts that connects South Bus Terminal with stops in between.
 
 ---
 
