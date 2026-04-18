@@ -1,10 +1,10 @@
 "use client";
 
+import { Suspense, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
 import { CeresBusIcon } from "@/components/ui/ceres-bus-icon";
 import {
   createCompletedBooking,
@@ -26,6 +26,27 @@ const WALLET_OPTIONS: Array<{
 ];
 
 export default function BookingSummaryPage() {
+  return (
+    <Suspense fallback={<PaymentPageSkeleton />}>
+      <BookingSummaryContent />
+    </Suspense>
+  );
+}
+
+function PaymentPageSkeleton() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-center">
+      <div className="max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <h1 className="text-2xl font-black text-[#1d348a]">Loading payment details...</h1>
+        <p className="mt-3 text-sm font-semibold text-slate-500">
+          Please wait while we prepare your booking summary.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function BookingSummaryContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState<EWalletMethod>("GCash");
