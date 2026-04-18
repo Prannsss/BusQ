@@ -1,5 +1,4 @@
-
-import React from "react"; // Import React for React.memo
+import React from "react";
 import { Reservation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

@@ -9,7 +9,18 @@ export default {
   ],
   theme: {
   	extend: {
+      fontFamily: {
+        sans: ['Manrope', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'sans-serif'],
+      },
   		colors: {
+        "surface-container-low": "#f2f4f7",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-highest": "#e0e3e6",
+        "primary-container": "#356ee7",
+        "on-surface": "#191c1e",
+        "tertiary": "#9e3d00",
+        "outline-variant": "rgba(193, 198, 215, 0.2)",
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

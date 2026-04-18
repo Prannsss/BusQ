@@ -1,0 +1,15 @@
+export default function AdminSettingsPage() {
+  return (
+    <section className="space-y-4">
+      <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-[#1d348a]">
+        Settings
+      </h1>
+      <div className="border-2 border-[#1d348a] bg-white p-6">
+        <p className="font-medium text-zinc-700">
+          Initial settings workspace. Next step: configure company profile,
+          fare rules, booking controls, and notification preferences.
+        </p>
+      </div>
+    </section>
+  );
+}

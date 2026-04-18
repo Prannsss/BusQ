@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { FilterableBusType } from "@/types";
+import { busTypeLabels, type FilterableBusType } from "@/types";
 import { Card, CardContent } from "../ui/card";
 import { Filter } from "lucide-react";
 
@@ -46,9 +46,9 @@ const TripFilters = React.memo(function TripFilters({
                   <SelectValue placeholder="Select bus type" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-popover">
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Traditional">Non-Airconditioned</SelectItem>
-                  <SelectItem value="Airconditioned">Airconditioned</SelectItem>
+                  <SelectItem value="all">{busTypeLabels.all}</SelectItem>
+                  <SelectItem value="Traditional">{busTypeLabels.Traditional}</SelectItem>
+                  <SelectItem value="Airconditioned">{busTypeLabels.Airconditioned}</SelectItem>
                   </SelectContent>
               </Select>
             </div>

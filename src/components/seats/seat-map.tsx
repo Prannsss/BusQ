@@ -29,7 +29,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
         rowArray.push({
           id: `${colLetter}${rowNum}`,
           label: `${colLetter}${rowNum}`,
-          status: isReserved ? 'reserved' : 'available',
+          status: isReserved ? 'Reserved' : 'Available',
         });
         if (colIndex === AISLE_AFTER_COL_INDEX) {
           rowArray.push(null); 
@@ -44,7 +44,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
       layout.rearBenchRow.push({
         id: `R${i}`,
         label: `R${i}`,
-        status: isReserved ? 'reserved' : 'available',
+        status: isReserved ? 'Reserved' : 'Available',
       });
     }
 
@@ -60,7 +60,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
         rowArray.push({
           id: `${colLetter}${rowNum}`,
           label: `${colLetter}${rowNum}`,
-          status: isReserved ? 'reserved' : 'available',
+          status: isReserved ? 'Reserved' : 'Available',
         });
         if (colIndex === AISLE_AFTER_COL_INDEX) {
           rowArray.push(null); 
@@ -75,7 +75,7 @@ const generateSeatLayout = (busType: BusType): SeatLayout => {
       layout.rearBenchRow.push({
         id: `R${i}`,
         label: `R${i}`,
-        status: isReserved ? 'reserved' : 'available',
+        status: isReserved ? 'Reserved' : 'Available',
       });
     }
   }
@@ -100,7 +100,7 @@ const SeatMap = React.memo(function SeatMap({ busType, onSeatSelectionChange }: 
 
 
   const handleSeatClick = (seatId: string, status: SeatStatus) => {
-    if (status === 'reserved') return;
+    if (status === 'Reserved') return;
 
     setSelectedSeats(prevSelected =>
       prevSelected.includes(seatId)
@@ -118,9 +118,9 @@ const SeatMap = React.memo(function SeatMap({ busType, onSeatSelectionChange }: 
     return cn(
       "w-10 h-10 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-110",
       "border-2",
-      status === 'available' && !isSelected && "bg-green-200/30 border-green-500 text-green-700 hover:bg-green-300/50",
-      status === 'available' && isSelected && "bg-primary border-primary/70 text-primary-foreground ring-2 ring-offset-2 ring-offset-card ring-primary",
-      status === 'reserved' && "bg-muted border-muted-foreground text-muted-foreground cursor-not-allowed opacity-60",
+      status === 'Available' && !isSelected && "bg-green-200/30 border-green-500 text-green-700 hover:bg-green-300/50",
+      status === 'Available' && isSelected && "bg-primary border-primary/70 text-primary-foreground ring-2 ring-offset-2 ring-offset-card ring-primary",
+      status === 'Reserved' && "bg-muted border-muted-foreground text-muted-foreground cursor-not-allowed opacity-60",
     );
   };
   
@@ -144,16 +144,15 @@ const SeatMap = React.memo(function SeatMap({ busType, onSeatSelectionChange }: 
           <React.Fragment key={`main-row-${rowIndex}`}>
             {row.map((seat, seatIndex) => (
               seat ? (
-                <div
+                <button
+                  type="button"
                   key={seat.id}
                   className={getSeatClassName(seat.status, seat.id)}
                   onClick={() => handleSeatClick(seat.id, seat.status)}
-                  role="button"
-                  aria-pressed={selectedSeats.includes(seat.id)}
-                  aria-label={`Seat ${seat.label}, Status: ${selectedSeats.includes(seat.id) ? 'selected' : seat.status}`}
+                  aria-label={`Seat ${seat.id}, Status: ${selectedSeats.includes(seat.id) ? 'selected' : seat.status}`}
                 >
-                  <span className="text-xs font-medium">{seat.label}</span>
-                </div>
+                  <span className="text-xs sm:text-sm font-medium">{seat.id}</span>
+                </button>
               ) : (
                 <div key={`aisle-${rowIndex}-${seatIndex}`} className="w-10 h-10" aria-hidden="true" /> 
               )
@@ -170,16 +169,15 @@ const SeatMap = React.memo(function SeatMap({ busType, onSeatSelectionChange }: 
           <div className="flex justify-center items-center gap-2 flex-wrap max-w-md mx-auto">
             {seatLayout.rearBenchRow.map(seat => (
               seat ? ( 
-                <div
+                <button
+                  type="button"
                   key={seat.id}
                   className={getSeatClassName(seat.status, seat.id)}
                   onClick={() => handleSeatClick(seat.id, seat.status)}
-                  role="button"
-                  aria-pressed={selectedSeats.includes(seat.id)}
                   aria-label={`Seat ${seat.label}, Status: ${selectedSeats.includes(seat.id) ? 'selected' : seat.status}`}
                 >
                   <span className="text-xs font-medium">{seat.label}</span>
-                </div>
+                </button>
               ) : null 
             ))}
           </div>

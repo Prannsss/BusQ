@@ -151,12 +151,12 @@ const TripCard = React.memo(function TripCard({ trip }: TripCardProps) {
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Tag className="h-4 w-4 mr-2 text-primary" />
-          <span>Price: PHP {price.toFixed(2)}</span>
+          <span>Price: PHP {price?.toFixed(2)}</span>
         </div>
       </CardContent>
       <CardFooter>
         {isBookable ? (
-          <Link href={`/trips/${id}/seats`} passHref className="w-full">
+          <Link href={`/client/trips/${id}/seats`} passHref className="w-full">
             <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
               Select Seats <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

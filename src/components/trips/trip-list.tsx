@@ -188,6 +188,8 @@ const getDestinationTravelTime = (destination: SouthTerminalDestination): number
     "Boljoon": 4,
     "Oslob": 4.5,
     "Santander": 5,
+    "Moalboal": 3,
+    "Bato": 5.5,
   };
   return travelTimes[destination] || 2;
 };
@@ -211,6 +213,8 @@ const getDestinationPrice = (destination: SouthTerminalDestination, busType: Bus
     "Boljoon": { "Traditional": 120, "Airconditioned": 140 },
     "Oslob": { "Traditional": 140, "Airconditioned": 160 },
     "Santander": { "Traditional": 160, "Airconditioned": 180 },
+    "Moalboal": { "Traditional": 110, "Airconditioned": 130 },
+    "Bato": { "Traditional": 185, "Airconditioned": 210 },
   };
   return priceMatrix[destination][busType];
 };
@@ -270,6 +274,8 @@ export function TripList({ activeBusTypeFilter }: TripListProps) {
         ...trip,
         displayStatus,
         badgeColorKey,
+        availableSeats: trip.availableSeats ?? 0,
+        totalSeats: trip.totalSeats ?? 0,
         busName: getBusName(trip.physicalBusId), // Add bus name to display info
       };
     });
