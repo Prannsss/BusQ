@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { ArrowLeft, ArrowRight, Fan, Zap, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -52,6 +52,14 @@ function parseLocalDateTime(dateIso: string, timeLabel: string): number | null {
 }
 
 export default function SeatsPage() {
+  return (
+    <Suspense fallback={<div>Loading seats...</div>}>
+      <SeatsPageContent />
+    </Suspense>
+  );
+}
+
+function SeatsPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const tripId = params.tripId as string;

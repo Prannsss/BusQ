@@ -4,11 +4,19 @@ import { Download, Info, Ticket, X } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { CeresBusIcon } from "@/components/ui/ceres-bus-icon";
 import { decodeBookingPayload, type CompletedBooking } from "@/lib/booking-flow";
 
 export default function BookingQrPage() {
+  return (
+    <Suspense fallback={<div>Loading QR...</div>}>
+      <BookingQrPageContent />
+    </Suspense>
+  );
+}
+
+function BookingQrPageContent() {
   const searchParams = useSearchParams();
   const rawBooking = searchParams.get("booking");
   const [qrImages, setQrImages] = useState<Record<string, string>>({});

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Clock, SlidersHorizontal, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -36,6 +36,14 @@ function formatDateToLocalIso(date: Date): string {
 }
 
 export default function TripsPage() {
+  return (
+    <Suspense fallback={<div>Loading trips...</div>}>
+      <TripsPageContent />
+    </Suspense>
+  );
+}
+
+function TripsPageContent() {
   const searchParams = useSearchParams();
   const queryTerminal = searchParams.get("terminal");
   const queryDestination = searchParams.get("destination") as TerminalDestination | null;

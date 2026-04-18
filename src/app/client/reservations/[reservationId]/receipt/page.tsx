@@ -5,11 +5,19 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { CeresBusIcon } from "@/components/ui/ceres-bus-icon";
 import { decodeBookingPayload, type CompletedBooking } from "@/lib/booking-flow";
 
 export default function ReceiptPage() {
+  return (
+    <Suspense fallback={<div>Loading receipt...</div>}>
+      <ReceiptPageContent />
+    </Suspense>
+  );
+}
+
+function ReceiptPageContent() {
   const searchParams = useSearchParams();
   const rawBooking = searchParams.get("booking");
   const receiptRef = useRef<HTMLDivElement>(null);
