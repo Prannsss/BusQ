@@ -61,6 +61,7 @@ export function SignupForm() {
       name: values.name,
       email: values.email,
       password: values.password, // Storing password for mock login
+      role: 'passenger',
     };
     if (typeof window !== 'undefined') {
       localStorage.setItem('busqUser', JSON.stringify(userData));
@@ -72,7 +73,7 @@ export function SignupForm() {
       description: "Your details have been registered. Please log in.",
       variant: "default", // or "success" if you have that variant
     });
-    router.push('/login'); // Redirect to login page
+    router.push('/auth/login'); // Redirect to login page
   }
 
   return (

@@ -67,6 +67,7 @@ export function LoginForm() {
 
     let loginSuccess = false;
     let userName = "User";
+    let userRole = "passenger";
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('busqUser');
       if (storedUser) {
@@ -75,7 +76,8 @@ export function LoginForm() {
           if (userData.email === values.email && userData.password === values.password) {
             loginSuccess = true;
             userName = userData.name || "User";
-            localStorage.setItem('busqLoggedInUser', JSON.stringify({ email: values.email, name: userName })); 
+            userRole = userData.role || "passenger";
+            localStorage.setItem('busqLoggedInUser', JSON.stringify({ email: values.email, name: userName, role: userRole }));
           }
         } catch (e) {
           console.error("Error during mock login check:", e);
@@ -88,7 +90,7 @@ export function LoginForm() {
         title: "Login Successful",
         description: `Welcome back, ${userName}!`,
       });
-      router.push('/'); 
+      router.push(userRole === 'admin' ? '/admin' : '/');
     } else {
       toast({
         title: "Login Failed",

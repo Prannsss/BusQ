@@ -32,7 +32,7 @@ export function AdminSidebar() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('busqLoggedInUser');
     }
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   const toggleSidebar = () => {

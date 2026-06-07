@@ -15,8 +15,9 @@ import {
   Mail,
   Lock,
 } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 type FloatingInputProps = {
   id: string;
@@ -62,6 +63,8 @@ function FloatingInput({
 }
 
 export function AdminOnboardingJourney() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
   const progressPercent = (step / totalSteps) * 100;
@@ -89,6 +92,43 @@ export function AdminOnboardingJourney() {
   const totalBusSeats = totalColumnSeats + rearSeats;
   const canAddAisle = columns.length > 0 && columns[columns.length - 1].type !== 'aisle';
   const shouldCenterColumns = columns.length <= 4;
+
+  const handleFinish = () => {
+    if (!companyEmail || !password) {
+      toast({
+        title: 'Missing details',
+        description: 'Please provide a company email and password.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'Please make sure both passwords are the same.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        'busqUser',
+        JSON.stringify({
+          name: companyName || contactPerson || 'Operator',
+          email: companyEmail,
+          password,
+          role: 'admin',
+        }),
+      );
+    }
+
+    toast({
+      title: 'Operator workspace created',
+      description: 'Please log in to access your admin dashboard.',
+    });
+    router.push('/auth/login');
+  };
 
   const handleNext = () => {
      if (step < totalSteps) setStep(step + 1);
@@ -498,12 +538,13 @@ export function AdminOnboardingJourney() {
                 Next <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             ) : (
-              <Link
-                href="/auth/login"
+              <button
+                type="button"
+                onClick={handleFinish}
                 className="flex-1 bg-[#1d348a] hover:bg-[#112368] text-white py-4 font-bold uppercase tracking-wide transition-all flex items-center justify-center border-2 border-[#1d348a] text-sm"
               >
                 Verify Email and Login <ChevronRight className="w-4 h-4 ml-1" />
-              </Link>
+              </button>
             )}
           </div>
         </div>

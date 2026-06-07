@@ -1,6 +1,16 @@
 'use client';
 
-import { Banknote, Bus, Calendar, Plus, FileText } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Banknote, Bus, Calendar } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data
 const mockStats = {
@@ -39,7 +49,45 @@ const bookingTrends = [
   { day: 'SUN', value: 38 },
 ];
 
+// Mock standby buses available for dispatch
+const standbyBuses = [
+  { id: 'BUS-704', label: 'BUS-704 • ABC-321' },
+  { id: 'BUS-705', label: 'BUS-705 • JKL-654' },
+  { id: 'BUS-708', label: 'BUS-708 • STU-258' },
+];
+
+const dispatchRoutes = [
+  'Southbound - East Coast Line',
+  'Southbound - West Coast Line',
+  'Northbound - Eastern Line',
+  'Northbound - Western Line',
+];
+
 export default function AdminHomePage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchBus, setDispatchBus] = useState('');
+  const [dispatchRoute, setDispatchRoute] = useState('');
+
+  const handleDispatch = () => {
+    if (!dispatchBus || !dispatchRoute) {
+      toast({
+        title: 'Select a bus and route',
+        description: 'Please choose both a standby bus and a route to dispatch.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: 'Bus dispatched',
+      description: `${dispatchBus} dispatched on ${dispatchRoute}.`,
+    });
+    setDispatchOpen(false);
+    setDispatchBus('');
+    setDispatchRoute('');
+  };
+
   return (
     <section className="space-y-6">
       {/* Header */}
@@ -101,13 +149,22 @@ export default function AdminHomePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button className="border-2 border-[#1d348a] bg-[#1d348a] text-white py-4 font-bold uppercase tracking-tight text-lg hover:bg-opacity-90 transition-opacity">
+        <button
+          onClick={() => router.push('/admin/bookings')}
+          className="border-2 border-[#1d348a] bg-[#1d348a] text-white py-4 font-bold uppercase tracking-tight text-lg hover:bg-opacity-90 transition-opacity"
+        >
           Bookings
         </button>
-        <button className="border-2 border-[#ff6802] bg-[#ff6802] text-white py-4 font-bold uppercase tracking-tight text-lg hover:bg-opacity-90 transition-opacity">
+        <button
+          onClick={() => setDispatchOpen(true)}
+          className="border-2 border-[#ff6802] bg-[#ff6802] text-white py-4 font-bold uppercase tracking-tight text-lg hover:bg-opacity-90 transition-opacity"
+        >
           Dispatch Bus
         </button>
-        <button className="border-2 border-[#1d348a] bg-white text-[#1d348a] py-4 font-bold uppercase tracking-tight text-lg hover:bg-zinc-100 transition-colors">
+        <button
+          onClick={() => router.push('/admin/reports')}
+          className="border-2 border-[#1d348a] bg-white text-[#1d348a] py-4 font-bold uppercase tracking-tight text-lg hover:bg-zinc-100 transition-colors"
+        >
           View Reports
         </button>
       </div>
@@ -190,6 +247,68 @@ export default function AdminHomePage() {
           </div>
         </div>
       </div>
+
+      {/* Dispatch Bus Modal */}
+      <Dialog open={dispatchOpen} onOpenChange={setDispatchOpen}>
+        <DialogContent className="rounded-none sm:rounded-none border-2 border-[#1d348a] bg-white text-[#1d348a]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-[#1d348a]">
+              Dispatch Bus
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="dispatch-bus" className="mb-2 block text-xs font-bold uppercase tracking-tight text-zinc-600">
+                Standby Bus
+              </label>
+              <select
+                id="dispatch-bus"
+                value={dispatchBus}
+                onChange={(e) => setDispatchBus(e.target.value)}
+                className="w-full appearance-none border-2 border-[#1d348a] bg-white px-4 py-2 font-bold uppercase tracking-tight text-xs text-[#1d348a] focus:outline-none focus:bg-zinc-100"
+              >
+                <option value="">Select a bus</option>
+                {standbyBuses.map((bus) => (
+                  <option key={bus.id} value={bus.id}>{bus.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="dispatch-route" className="mb-2 block text-xs font-bold uppercase tracking-tight text-zinc-600">
+                Route
+              </label>
+              <select
+                id="dispatch-route"
+                value={dispatchRoute}
+                onChange={(e) => setDispatchRoute(e.target.value)}
+                className="w-full appearance-none border-2 border-[#1d348a] bg-white px-4 py-2 font-bold uppercase tracking-tight text-xs text-[#1d348a] focus:outline-none focus:bg-zinc-100"
+              >
+                <option value="">Select a route</option>
+                {dispatchRoutes.map((route) => (
+                  <option key={route} value={route}>{route}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <button
+              onClick={() => setDispatchOpen(false)}
+              className="border-2 border-[#1d348a] bg-white text-[#1d348a] px-4 py-2 font-bold uppercase tracking-tight text-xs hover:bg-zinc-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDispatch}
+              className="border-2 border-[#ff6802] bg-[#ff6802] text-white px-4 py-2 font-bold uppercase tracking-tight text-xs hover:bg-opacity-90 transition-opacity"
+            >
+              Dispatch
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
